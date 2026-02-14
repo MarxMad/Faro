@@ -1,0 +1,1 @@
+/Users/gerryvela/Downloads/faro-frontend-structure/contracts/faro_invoice_token/target/wasm32v1-none/release/faro_invoice_token.wasm: /Users/gerryvela/Downloads/faro-frontend-structure/contracts/faro_invoice_token/src/lib.rs

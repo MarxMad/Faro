@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Faro: identidad visual — confianza, seriedad, respaldo, tecnología */
+/* Paleta: navy + ámbar bien integrados en fondos y acentos */
+@layer base {
+  :root {
+    /* Fondos: slate azulado suave, transición natural a secciones oscuras */
+    --background: 220 22% 95%;
+    --foreground: 220 30% 12%;
+    --card: 220 18% 98%;
+    --card-foreground: 220 30% 12%;
+    --popover: 220 18% 98%;
+    --popover-foreground: 220 30% 12%;
+    /* Primary: navy profundo — confianza y seriedad */
+    --primary: 220 42% 20%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 18% 90%;
+    --secondary-foreground: 220 30% 12%;
+    --muted: 220 18% 90%;
+    --muted-foreground: 220 14% 40%;
+    /* Acento: ámbar cálido — luz del faro, CTA y highlights */
+    --accent: 36 95% 48%;
+    --accent-foreground: 220 42% 12%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 18% 84%;
+    --input: 220 18% 84%;
+    --ring: 220 42% 20%;
+    --chart-1: 220 42% 42%;
+    --chart-2: 36 95% 48%;
+    --chart-3: 188 52% 38%;
+    --chart-4: 220 35% 32%;
+    --chart-5: 36 85% 52%;
+    --radius: 0.5rem;
+    /* Sidebar: navy con acento ámbar */
+    --sidebar-background: 220 38% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 36 95% 50%;
+    --sidebar-primary-foreground: 220 42% 10%;
+    --sidebar-accent: 220 32% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 28% 24%;
+    --sidebar-ring: 36 95% 50%;
+    /* Luz del faro: ámbar para glow y gradientes */
+    --beacon-glow: 36 95% 55%;
+  }
+  .dark {
+    --background: 220 32% 7%;
+    --foreground: 220 12% 96%;
+    --card: 220 28% 11%;
+    --card-foreground: 220 12% 96%;
+    --popover: 220 28% 11%;
+    --popover-foreground: 220 12% 96%;
+    --primary: 36 95% 52%;
+    --primary-foreground: 220 42% 8%;
+    --secondary: 220 24% 16%;
+    --secondary-foreground: 220 12% 96%;
+    --muted: 220 24% 16%;
+    --muted-foreground: 220 12% 58%;
+    --accent: 36 95% 50%;
+    --accent-foreground: 220 42% 8%;
+    --destructive: 0 58% 38%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 22% 20%;
+    --input: 220 22% 20%;
+    --ring: 36 95% 52%;
+    --chart-1: 36 95% 55%;
+    --chart-2: 188 52% 48%;
+    --chart-3: 220 40% 52%;
+    --chart-4: 36 85% 58%;
+    --chart-5: 188 42% 52%;
+    --sidebar-background: 220 36% 9%;
+    --sidebar-foreground: 220 12% 96%;
+    --sidebar-primary: 36 95% 52%;
+    --sidebar-primary-foreground: 220 42% 8%;
+    --sidebar-accent: 220 26% 16%;
+    --sidebar-accent-foreground: 220 12% 96%;
+    --sidebar-border: 220 24% 20%;
+    --sidebar-ring: 36 95% 52%;
+    --beacon-glow: 36 95% 55%;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border-2 border-primary/20 bg-secondary px-5 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-primary/5 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-lg bg-[hsl(var(--accent))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--accent-foreground))] shadow-md shadow-[hsl(var(--accent))]/25 transition-all hover:opacity-90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent))] focus-visible:ring-offset-2;
+  }
+  .glass-panel {
+    @apply rounded-xl border border-border/70 bg-card/90 shadow-sm backdrop-blur-sm;
+  }
+}
+
+@layer utilities {
+  .dot-grid {
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.12) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+  .dot-grid-accent {
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--accent) / 0.2) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
