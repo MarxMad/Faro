@@ -3,7 +3,15 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Menu, X } from "lucide-react"
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs"
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button"
+import { Button } from "@/components/ui/button"
 
 const navLinks = [
   { href: "#features", label: "Características" },
@@ -36,12 +44,28 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden md:block">
-          <ConnectWalletButton
-            label="Entrar"
-            redirectOnConnect
-            variant="outline"
-          />
+        <div className="hidden items-center gap-3 md:flex">
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="ghost" size="sm">
+                Iniciar sesión
+              </Button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <Button size="sm">Registrarse</Button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/app">Ir al dashboard</Link>
+            </Button>
+            <ConnectWalletButton
+              label="Entrar"
+              redirectOnConnect
+              variant="outline"
+            />
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
         </div>
 
         <button
@@ -67,11 +91,29 @@ export function Navbar() {
               </a>
             ))}
             <div className="flex flex-col gap-3 border-t border-border/40 pt-4">
-              <ConnectWalletButton
-                label="Entrar"
-                redirectOnConnect
-                variant="primary"
-              />
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button variant="outline" className="w-full">
+                    Iniciar sesión
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button className="w-full">Registrarse</Button>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/app">Ir al dashboard</Link>
+                </Button>
+                <ConnectWalletButton
+                  label="Entrar"
+                  redirectOnConnect
+                  variant="primary"
+                />
+                <div className="flex justify-center">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
             </div>
           </div>
         </div>
