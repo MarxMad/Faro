@@ -12,6 +12,8 @@ import {
   FileCheck,
   Loader2,
   Wallet,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,6 +38,7 @@ export default function DashboardPage() {
   const { address, isConnected } = useStellarWalletKit()
   const [providerInvoices, setProviderInvoices] = useState<Invoice[]>([])
   const [investorInvoices, setInvestorInvoices] = useState<Invoice[]>([])
+  const [debtorInvoices, setDebtorInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,24 +46,31 @@ export default function DashboardPage() {
     if (!address) {
       setProviderInvoices([])
       setInvestorInvoices([])
+      setDebtorInvoices([])
       setLoading(false)
       return
     }
     let cancelled = false
     setLoading(true)
     setError(null)
+    const enc = encodeURIComponent(address)
+    const opts = { cache: "no-store" as RequestCache }
     Promise.all([
-      fetch(`/api/invoices?provider=${encodeURIComponent(address)}`).then((r) =>
+      fetch(`/api/invoices?provider=${enc}`, opts).then((r) =>
         r.ok ? r.json() : []
       ),
-      fetch(`/api/invoices?investor=${encodeURIComponent(address)}`).then((r) =>
+      fetch(`/api/invoices?investor=${enc}`, opts).then((r) =>
+        r.ok ? r.json() : []
+      ),
+      fetch(`/api/invoices?debtor=${enc}`, opts).then((r) =>
         r.ok ? r.json() : []
       ),
     ])
-      .then(([provider, investor]: [Invoice[], Invoice[]]) => {
+      .then(([provider, investor, debtor]: [Invoice[], Invoice[], Invoice[]]) => {
         if (!cancelled) {
           setProviderInvoices(Array.isArray(provider) ? provider : [])
           setInvestorInvoices(Array.isArray(investor) ? investor : [])
+          setDebtorInvoices(Array.isArray(debtor) ? debtor : [])
         }
       })
       .catch(() => {
@@ -72,6 +82,33 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
+  }, [address])
+
+  useEffect(() => {
+    if (!address) return
+    const onFocus = () => {
+      const enc = encodeURIComponent(address)
+      const opts = { cache: "no-store" as RequestCache }
+      Promise.all([
+        fetch(`/api/invoices?provider=${enc}`, opts).then((r) =>
+          r.ok ? r.json() : []
+        ),
+        fetch(`/api/invoices?investor=${enc}`, opts).then((r) =>
+          r.ok ? r.json() : []
+        ),
+        fetch(`/api/invoices?debtor=${enc}`, opts).then((r) =>
+          r.ok ? r.json() : []
+        ),
+      ])
+        .then(([provider, investor, debtor]: [Invoice[], Invoice[], Invoice[]]) => {
+          setProviderInvoices(Array.isArray(provider) ? provider : [])
+          setInvestorInvoices(Array.isArray(investor) ? investor : [])
+          setDebtorInvoices(Array.isArray(debtor) ? debtor : [])
+        })
+        .catch(() => setError("Error al cargar actividad"))
+    }
+    window.addEventListener("focus", onFocus)
+    return () => window.removeEventListener("focus", onFocus)
   }, [address])
 
   const totalTokenized = providerInvoices.reduce((s, i) => s + i.amount, 0)
@@ -87,10 +124,12 @@ export default function DashboardPage() {
     ...providerInvoices.filter((i) => i.status === "financiada"),
     ...investorInvoices.filter((i) => i.status === "financiada"),
   ].length
+  const pendingPayAsDebtor = debtorInvoices.filter((i) => i.status === "financiada").length
 
   const allActivity = [
     ...providerInvoices.map((i) => ({ ...i, role: "provider" as const })),
     ...investorInvoices.map((i) => ({ ...i, role: "investor" as const })),
+    ...debtorInvoices.map((i) => ({ ...i, role: "deudor" as const })),
   ]
     .sort(
       (a, b) =>
@@ -161,7 +200,7 @@ export default function DashboardPage() {
         <p className="text-destructive">{error}</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="glass-panel p-5 transition-all hover:shadow-md border-primary/10">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total tokenizado</span>
@@ -218,6 +257,20 @@ export default function DashboardPage() {
                 Financiadas, a la espera del pago del negocio
               </p>
             </div>
+            <div className="glass-panel p-5 transition-all hover:shadow-md border-amber-500/20 bg-amber-500/5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Por pagar</span>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  <FileCheck className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="mt-3 font-display text-2xl font-bold text-amber-600 dark:text-amber-400">
+                {pendingPayAsDebtor}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Como negocio (deudor). Debe ser la wallet que el proveedor puso como «Dirección del deudor» al tokenizar.
+              </p>
+            </div>
           </div>
 
           <div className="glass-panel overflow-hidden">
@@ -237,7 +290,7 @@ export default function DashboardPage() {
                 <div className="px-6 py-12 text-center text-muted-foreground">
                   <p className="font-medium">Sin actividad aún</p>
                   <p className="mt-1 text-sm">
-                    Tokeniza una factura o invierte en el mercado para verla aquí.
+                    Tokeniza una factura, invierte en el mercado o conecta como deudor para ver actividad aquí.
                   </p>
                   <div className="mt-4 flex justify-center gap-2">
                     <Button asChild size="sm" className="gap-2">
@@ -273,6 +326,9 @@ export default function DashboardPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Fecha
                       </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,7 +338,14 @@ export default function DashboardPage() {
                         className="border-b border-border/50 transition-colors last:border-0 hover:bg-muted/20"
                       >
                         <td className="px-6 py-4 text-sm font-medium text-primary">
-                          <Link href={`/app/market/${row.id}`} className="hover:underline">
+                          <Link
+                            href={
+                              row.role === "deudor" && row.status === "financiada"
+                                ? `/app/pay/${row.id}`
+                                : `/app/market/${row.id}`
+                            }
+                            className="hover:underline"
+                          >
                             {row.id}
                           </Link>
                         </td>
@@ -301,10 +364,31 @@ export default function DashboardPage() {
                           </Badge>
                         </td>
                         <td className="px-6 py-4 text-xs text-muted-foreground">
-                          {row.role === "provider" ? "Proveedor" : "Inversionista"}
+                          {row.role === "provider"
+                            ? "Proveedor"
+                            : row.role === "deudor"
+                              ? "Deudor"
+                              : "Inversionista"}
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           {new Date(row.createdAt).toLocaleDateString("es-MX")}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {row.role === "deudor" && row.status === "financiada" ? (
+                            <Button asChild size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+                              <Link href={`/app/pay/${row.id}`}>
+                                <CreditCard className="h-3.5 w-3.5" />
+                                Pagar
+                              </Link>
+                            </Button>
+                          ) : (
+                            <Button asChild size="sm" variant="ghost" className="gap-1.5 text-muted-foreground">
+                              <Link href={`/app/market/${row.id}`}>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Ver
+                              </Link>
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}

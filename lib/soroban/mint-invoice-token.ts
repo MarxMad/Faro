@@ -8,11 +8,10 @@ import {
   Contract,
   Keypair,
   TransactionBuilder,
-  xdr,
   XdrLargeInt,
   Networks,
 } from "@stellar/stellar-sdk"
-import { Server } from "@stellar/stellar-sdk/rpc"
+import { Api, Server } from "@stellar/stellar-sdk/rpc"
 
 const DECIMALS = 6
 
@@ -24,7 +23,7 @@ function getConfig(): {
 } | null {
   const rpcUrl = process.env.SOROBAN_RPC_URL
   const networkPassphrase =
-    process.env.SOROBAN_NETWORK_PASSPHRASE ?? Networks.FUTURENET
+    process.env.SOROBAN_NETWORK_PASSPHRASE ?? Networks.TESTNET
   const contractId = process.env.FARO_INVOICE_TOKEN_CONTRACT_ID
   const adminSecretKey = process.env.FARO_TOKEN_ADMIN_SECRET_KEY
 
@@ -88,6 +87,23 @@ export async function mintInvoiceToken(
   if (!result.hash) {
     throw new Error("Soroban sendTransaction did not return hash")
   }
+
+  // Esperar a que la tx esté en el ledger; si falla on-chain no guardamos el hash
+  const txResponse = await server.pollTransaction(result.hash, {
+    attempts: 30,
+    sleepStrategy: () => 2000,
+  })
+  if (txResponse.status === Api.GetTransactionStatus.FAILED) {
+    throw new Error(
+      "La transacción de tokenización falló en el ledger. Revisa el contrato, el admin y la red (testnet) en Stellar Expert."
+    )
+  }
+  if (txResponse.status !== Api.GetTransactionStatus.SUCCESS) {
+    throw new Error(
+      `Tokenización no confirmada (status: ${txResponse.status}). Revisa la tx en Stellar Expert.`
+    )
+  }
+
   return { hash: result.hash }
 }
 

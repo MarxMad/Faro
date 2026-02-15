@@ -41,52 +41,52 @@ Con Stellar CLI puedes generar una keypair y usarla como `--source` y `--admin`:
    ```
    Anota la pública para el paso siguiente; la secreta la usarás en `--source` (no la compartas).
 
-3. **Fondear en Futurenet** (elegir una opción):
+3. **Fondear en Testnet** (elegir una opción):
 
    **Opción A – Stellar CLI** (reemplaza `faro-deploy` por tu alias si usaste otro):
    ```bash
    stellar keys fund faro-deploy \
-     --network futurenet \
-     --rpc-url https://rpc-futurenet.stellar.org \
-     --network-passphrase "Test SDF Future Network ; October 2022"
+     --network testnet \
+     --rpc-url https://soroban-testnet.stellar.org \
+     --network-passphrase "Test SDF Network ; September 2015"
    ```
 
    **Opción B – curl (Friendbot):** sustituye `<TU_DIRECCION_G...>` por la dirección pública del paso 2.
    ```bash
-   curl "https://friendbot-futurenet.stellar.org/?addr=<TU_DIRECCION_G...>"
+   curl "https://friendbot.stellar.org/?addr=<TU_DIRECCION_G...>"
    ```
 
-   **Opción C – Web:** [Friendbot Futurenet](https://friendbot-futurenet.stellar.org/) — pega la dirección pública y pulsa el botón para recibir XLM.
+   **Opción C – Web:** [Friendbot Testnet](https://laboratory.stellar.org/#account-creator?network=test) — pega la dirección pública y crea la cuenta para recibir XLM.
 
 4. **Usar la wallet al desplegar:** en el comando de deploy usa:
    - `--source faro-deploy` (alias) **o** `--source S...` (secret key).
    - `--admin G...` con la misma dirección pública (o otra si quieres otro admin).
 
-## Desplegar en Futurenet
+## Desplegar en Testnet
 
 1. **Instalar Stellar CLI** (si no lo tienes):
    ```bash
    curl -fsSL https://github.com/stellar/stellar-cli/raw/main/install.sh | sh
    ```
 
-2. **Crear cuenta y conseguir XLM** en Futurenet:
-   - [Friendbot Futurenet](https://friendbot-futurenet.stellar.org/) (pasa tu dirección pública para recibir XLM).
+2. **Crear cuenta y conseguir XLM** en Testnet:
+   - [Friendbot Testnet](https://friendbot.stellar.org/) o [Laboratory Account Creator](https://laboratory.stellar.org/#account-creator?network=test) — pasa tu dirección pública para recibir XLM.
 
-3. **Desplegar** (sustituye `ADMIN_ADDRESS` por la cuenta G... que será owner/minter):
+3. **Desplegar** (sustituye `ADMIN_ADDRESS` por la cuenta G... que será owner/minter). O usa el script `deploy-testnet.sh` si está en el contrato:
    ```bash
    stellar contract deploy \
      --wasm target/wasm32v1-none/release/faro_invoice_token.wasm \
      --source <TU_CUENTA_CLAVE> \
-     --network futurenet \
-     --rpc-url https://rpc-futurenet.stellar.org \
-     --network-passphrase "Test SDF Future Network ; October 2022" \
+     --network testnet \
+     --rpc-url https://soroban-testnet.stellar.org \
+     --network-passphrase "Test SDF Network ; September 2015" \
      -- \
      --name "Faro Invoice Token" \
      --symbol "FIT" \
      --admin ADMIN_ADDRESS
    ```
 
-4. Anota el **contract ID** que devuelve el deploy. Ese ID se usa en el backend para invocar `mint` al tokenizar.
+4. Anota el **contract ID** que devuelve el deploy. Ese ID se usa en el backend (`.env`: `FARO_INVOICE_TOKEN_CONTRACT_ID`) para invocar `mint` al tokenizar.
 
 ## Uso desde el backend
 
@@ -94,15 +94,15 @@ Cuando una factura se tokeniza (p. ej. `POST /api/invoices`), el backend deberí
 
 1. Construir una transacción Soroban que invoque `mint(provider_address, amount)` en el contrato desplegado.
 2. Firmar con la cuenta **admin** (la que pasaste en `--admin`).
-3. Enviar la transacción al RPC de Futurenet (o testnet/mainnet).
+3. Enviar la transacción al RPC de Testnet (o la red donde desplegaste).
 
 La cantidad `amount` puede ser el nominal en unidades mínimas (6 decimales), p. ej. `invoice.amount * 1_000_000`. El contrato usa 6 decimales.
 
-Variables de entorno sugeridas para el backend:
+Variables de entorno para el backend (Testnet):
 
 ```env
-SOROBAN_RPC_URL=https://rpc-futurenet.stellar.org
-SOROBAN_NETWORK_PASSPHRASE="Test SDF Future Network ; October 2022"
+SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+SOROBAN_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
 FARO_INVOICE_TOKEN_CONTRACT_ID=<contract_id_del_deploy>
 FARO_TOKEN_ADMIN_SECRET_KEY=<secret_key_de_la_cuenta_admin>
 ```

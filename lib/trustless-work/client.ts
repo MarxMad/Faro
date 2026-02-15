@@ -89,3 +89,24 @@ export async function approveMilestone(
     true
   )
 }
+
+/**
+ * Libera fondos del escrow (single-release). La API puede devolver una transacción sin firmar
+ * para firmar en wallet y enviar con /helper/send-transaction, o ejecutar server-side si lo soporta.
+ * Usado desde el pay route cuando el front no envió releasedOnChain.
+ */
+export async function releaseEscrow(escrowId: string): Promise<{
+  transaction_hash?: string
+  tx_hash?: string
+  last_transaction_id?: string
+  [key: string]: unknown
+}> {
+  return request(
+    `/escrow/single-release/release-funds`,
+    {
+      method: "POST",
+      body: JSON.stringify({ contractId: escrowId }),
+    },
+    true
+  )
+}

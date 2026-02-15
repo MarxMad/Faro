@@ -1,15 +1,22 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Wallet, ChevronDown } from "lucide-react"
+import { Wallet, ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useStellarWalletKit } from "@/lib/wallet/stellar-wallet-kit-provider"
+import {
+  getAccountBalances,
+  formatBalance,
+  type AccountBalances,
+} from "@/lib/wallet/get-account-balances"
 
 function shortenAddress(addr: string, chars = 6): string {
   if (addr.length <= chars * 2) return addr
@@ -40,6 +47,31 @@ export function ConnectWalletButton({
     clearError,
   } = useStellarWalletKit()
 
+  const [balances, setBalances] = useState<AccountBalances | null>(null)
+  const [balancesLoading, setBalancesLoading] = useState(false)
+
+  useEffect(() => {
+    if (!address) {
+      setBalances(null)
+      return
+    }
+    let cancelled = false
+    setBalancesLoading(true)
+    getAccountBalances(address)
+      .then((b) => {
+        if (!cancelled) setBalances(b)
+      })
+      .catch(() => {
+        if (!cancelled) setBalances({ xlm: "0", usdc: null })
+      })
+      .finally(() => {
+        if (!cancelled) setBalancesLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [address])
+
   function handleOpenModal() {
     clearError()
     openConnectModal({
@@ -64,6 +96,22 @@ export function ConnectWalletButton({
           <DropdownMenuItem disabled className="text-xs text-muted-foreground">
             Wallet conectada
           </DropdownMenuItem>
+          {balancesLoading ? (
+            <DropdownMenuItem disabled className="gap-2 text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Cargando balances...
+            </DropdownMenuItem>
+          ) : balances ? (
+            <>
+              <DropdownMenuItem disabled className="text-xs font-medium text-foreground">
+                XLM {formatBalance(balances.xlm)}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="text-xs font-medium text-foreground">
+                USDC {balances.usdc != null ? formatBalance(balances.usdc) : "—"}
+              </DropdownMenuItem>
+            </>
+          ) : null}
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={disconnect}
             className="text-destructive focus:text-destructive"

@@ -21,7 +21,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     let cancelled = false
-    fetch("/api/invoices?status=en_mercado")
+    fetch("/api/invoices?status=en_mercado", { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error("Error al cargar facturas")
         return res.json()

@@ -18,6 +18,7 @@ import {
 } from "@creit.tech/stellar-wallets-kit"
 
 const STORAGE_KEY = "faro_wallet_public_key"
+const WALLET_ID_STORAGE_KEY = "faro_wallet_id"
 
 type OnConnected = () => void
 
@@ -39,6 +40,8 @@ interface StellarWalletKitContextValue {
   isFuturenet: boolean
   /** Obtiene la red actual de la wallet conectada (para validar que coincida con Futurenet) */
   getWalletNetwork: () => Promise<{ network: string; networkPassphrase: string } | null>
+  /** Firma una transacción XDR (sin enviar). Devuelve { signedTxXdr }. Necesario para Trustless Work (invertir, pagar). */
+  signTransaction: (unsignedXdr: string) => Promise<{ signedTxXdr: string }>
 }
 
 const Context = createContext<StellarWalletKitContextValue | null>(null)
@@ -69,9 +72,12 @@ export function StellarWalletKitProvider({ children }: { children: ReactNode }) 
   const getKit = useCallback(() => {
     if (kitRef.current) return kitRef.current
     if (typeof window === "undefined") return null
+    const storedWalletId =
+      typeof window !== "undefined" ? localStorage.getItem(WALLET_ID_STORAGE_KEY) : null
     const kit = new StellarWalletsKit({
       network: getNetwork(),
       modules: allowAllModules(),
+      ...(storedWalletId && { selectedWalletId: storedWalletId }),
     })
     kitRef.current = kit
     return kit
@@ -100,6 +106,7 @@ export function StellarWalletKitProvider({ children }: { children: ReactNode }) 
               setAddress(addr)
               if (typeof window !== "undefined") {
                 localStorage.setItem(STORAGE_KEY, addr)
+                localStorage.setItem(WALLET_ID_STORAGE_KEY, option.id)
               }
               options?.onConnected?.()
             } catch (e) {
@@ -127,6 +134,7 @@ export function StellarWalletKitProvider({ children }: { children: ReactNode }) 
     setError(null)
     if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(WALLET_ID_STORAGE_KEY)
     }
   }, [])
 
@@ -145,6 +153,20 @@ export function StellarWalletKitProvider({ children }: { children: ReactNode }) 
     }
   }, [address, getKit])
 
+  const signTransaction = useCallback(
+    async (unsignedXdr: string): Promise<{ signedTxXdr: string }> => {
+      const kit = getKit()
+      if (!kit) throw new Error("Wallet no disponible")
+      if (!address) throw new Error("Conecta tu wallet para firmar")
+      const { signedTxXdr } = await kit.signTransaction(unsignedXdr, {
+        address,
+        networkPassphrase: getNetwork(),
+      })
+      return { signedTxXdr }
+    },
+    [address, getKit]
+  )
+
   const value = useMemo<StellarWalletKitContextValue>(
     () => ({
       address,
@@ -156,8 +178,9 @@ export function StellarWalletKitProvider({ children }: { children: ReactNode }) 
       networkLabel,
       isFuturenet,
       getWalletNetwork,
+      signTransaction,
     }),
-    [address, openConnectModal, disconnect, error, clearError, networkLabel, isFuturenet, getWalletNetwork]
+    [address, openConnectModal, disconnect, error, clearError, networkLabel, isFuturenet, getWalletNetwork, signTransaction]
   )
 
   return <Context.Provider value={value}>{children}</Context.Provider>

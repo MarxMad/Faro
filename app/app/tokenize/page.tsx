@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { getStellarExpertTxUrl } from "@/lib/stellar-explorer-urls"
 import {
   useStellarWalletKit,
   FUTURENET_PASSPHRASE,
@@ -50,6 +51,7 @@ export default function TokenizePage() {
   const [checkingNetwork, setCheckingNetwork] = useState(false)
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const submitInProgressRef = useRef(false)
 
   const walletNotOnFuturenet =
     isFuturenet &&
@@ -278,7 +280,9 @@ export default function TokenizePage() {
                 />
               </div>
               <div className="flex flex-col gap-2 sm:col-span-2">
-                <Label className="text-muted-foreground">Dirección Stellar del deudor (opcional)</Label>
+                <Label className="text-muted-foreground">
+                  Dirección Stellar del deudor (recomendado para escrow)
+                </Label>
                 <Input
                   placeholder="G..."
                   value={form.debtorAddress}
@@ -286,7 +290,7 @@ export default function TokenizePage() {
                   className="bg-secondary/50 border-border font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Si la indicas, al invertir se creará un escrow (Trustless Work) para que el negocio pague el nominal y tú recibas al vencimiento.
+                  Necesaria para crear escrow (Trustless Work) al invertir y para que el negocio (deudor) vea la factura como «por pagar» en su dashboard y pueda pagar el nominal al vencimiento. Si no la indicas, el deudor no verá esta factura.
                 </p>
               </div>
               <div className="flex flex-col gap-2">
@@ -359,14 +363,23 @@ export default function TokenizePage() {
                   className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
                 >
                   <a
-                    href={`https://horizon-futurenet.stellar.org/transactions/${successTxHash}`}
+                    href={getStellarExpertTxUrl(
+                      successTxHash,
+                      typeof process !== "undefined" &&
+                        process.env.NEXT_PUBLIC_SOROBAN_NETWORK
+                        ? process.env.NEXT_PUBLIC_SOROBAN_NETWORK
+                        : "testnet"
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Ver comprobante en Horizon
+                    Ver comprobante en Stellar Expert
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 </Button>
+                <p className="text-xs text-muted-foreground">
+                  Si Stellar Expert muestra «Transaction not found», el backend debe usar testnet (SOROBAN_RPC_URL y SOROBAN_NETWORK_PASSPHRASE en .env). Reinicia el servidor tras cambiar .env.
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Redirigiendo al dashboard en unos segundos…
                 </p>
@@ -381,11 +394,11 @@ export default function TokenizePage() {
                     role="alert"
                   >
                     <p className="font-medium text-amber-700 dark:text-amber-400">
-                      Tu wallet no está en Futurenet
+                      Tu wallet no está en la red configurada
                     </p>
                     <p className="text-muted-foreground">
-                      La tokenización on-chain usa la red <strong>Futurenet</strong>. Cambia la red
-                      en tu extensión (Freighter: menú → Red → Futurenet) y vuelve a verificar.
+                      La tokenización on-chain usa la red configurada en la app. Cambia la red
+                      en tu extensión (Freighter: menú → Red) para que coincida (p. ej. Testnet) y vuelve a verificar.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button
@@ -489,6 +502,7 @@ export default function TokenizePage() {
                 Atrás
               </Button>
               <Button
+                type="button"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
                 disabled={
                   !isConnected ||
@@ -496,11 +510,13 @@ export default function TokenizePage() {
                   !!(isFuturenet && walletNotOnFuturenet)
                 }
                 onClick={async () => {
+                  if (submitInProgressRef.current) return
                   if (!address) {
                     setSubmitError("Conecta tu wallet para tokenizar.")
                     return
                   }
                   setSubmitError(null)
+                  submitInProgressRef.current = true
                   setSubmitting(true)
                   try {
                     const res = await fetch("/api/invoices", {
@@ -517,26 +533,36 @@ export default function TokenizePage() {
                         discountRatePercent: form.discountRatePercent,
                       }),
                     })
+                    const data = (await res.json().catch(() => ({}))) as {
+                      id?: string
+                      tokenizeTxHash?: string | null
+                      error?: string
+                    }
                     if (!res.ok) {
-                      const data = await res.json().catch(() => ({}))
-                      const msg = (data as { error?: string }).error || "Error al crear factura"
+                      const msg = data.error || "Error al crear factura"
                       console.error("[Tokenize] API error:", res.status, data)
                       throw new Error(msg)
                     }
-                    const data = (await res.json()) as {
-                      id?: string
-                      tokenizeTxHash?: string | null
-                    }
-                    console.log("[Tokenize] Factura creada:", data.id, "tx:", data.tokenizeTxHash ?? "sin tx on-chain")
-                    if (data.tokenizeTxHash) {
-                      setSuccessTxHash(data.tokenizeTxHash)
+                    const txHash =
+                      data.tokenizeTxHash && String(data.tokenizeTxHash).trim()
+                        ? String(data.tokenizeTxHash)
+                        : null
+                    console.log("[Tokenize] Factura creada:", data.id, "tx:", txHash ?? "sin tx on-chain")
+                    if (txHash) {
+                      setSuccessTxHash(txHash)
                       toast.success("Factura tokenizada en Stellar", {
-                        description: `Tx: ${data.tokenizeTxHash.slice(0, 12)}…`,
+                        description: `Tx: ${txHash.slice(0, 12)}…`,
                         action: {
-                          label: "Ver comprobante",
+                          label: "Ver comprobante en Stellar Expert",
                           onClick: () =>
                             window.open(
-                              `https://horizon-futurenet.stellar.org/transactions/${data.tokenizeTxHash}`,
+                              getStellarExpertTxUrl(
+                                txHash,
+                                typeof process !== "undefined" &&
+                                  process.env.NEXT_PUBLIC_SOROBAN_NETWORK
+                                  ? process.env.NEXT_PUBLIC_SOROBAN_NETWORK
+                                  : "testnet"
+                              ),
                               "_blank"
                             ),
                         },
@@ -561,6 +587,7 @@ export default function TokenizePage() {
                     console.error("[Tokenize] Error:", e)
                     setSubmitError(e instanceof Error ? e.message : "Error al tokenizar")
                   } finally {
+                    submitInProgressRef.current = false
                     setSubmitting(false)
                   }
                 }}

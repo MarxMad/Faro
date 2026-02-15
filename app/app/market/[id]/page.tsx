@@ -1,9 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, FileText } from "lucide-react"
+import { ArrowLeft, Loader2, FileText, CheckCircle2, ExternalLink } from "lucide-react"
+import {
+  useInitializeEscrow,
+  useFundEscrow,
+  useSendTransaction,
+} from "@trustless-work/escrow"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -16,27 +21,64 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useStellarWalletKit } from "@/lib/wallet/stellar-wallet-kit-provider"
+import { getStellarExpertTxUrl, getStellarExpertContractUrl } from "@/lib/stellar-explorer-urls"
+import {
+  USDC_TRUSTLINE_ADDRESS,
+  USDC_SYMBOL,
+  USDC_DIVISOR,
+  TRUSTLESS_WORK_PLATFORM_FEE,
+  nominalToUSDCSmallestUnits,
+} from "@/lib/trustless-work/constants"
 import type { Invoice } from "@/lib/product"
+import type { InitializeSingleReleaseEscrowPayload } from "@trustless-work/escrow/types"
 
 function amountToInvest(amount: number, discountPercent: number): number {
   return Math.round(amount * (1 - discountPercent / 100))
 }
 
+const ESCROW_TYPE = "single-release" as const
+
+function normalizeId(param: unknown): string {
+  if (param == null) return ""
+  if (typeof param === "string") return param.trim()
+  if (Array.isArray(param) && param.length > 0 && typeof param[0] === "string")
+    return String(param[0]).trim()
+  return String(param).trim()
+}
+
 export default function MarketInvoiceDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const id = params.id as string
-  const { address, isConnected } = useStellarWalletKit()
+  const id = normalizeId(params?.id)
+  const { address, isConnected, signTransaction } = useStellarWalletKit()
+  const { deployEscrow } = useInitializeEscrow()
+  const { fundEscrow } = useFundEscrow()
+  const { sendTransaction } = useSendTransaction()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [investing, setInvesting] = useState(false)
   const [investError, setInvestError] = useState<string | null>(null)
+  const [investSuccess, setInvestSuccess] = useState<{
+    contractId: string
+    initTxHash?: string
+    fundTxHash?: string
+    invoice: Invoice
+    toPay: number
+  } | null>(null)
+  const investInProgressRef = useRef(false)
 
   useEffect(() => {
+    if (!id) {
+      setLoading(false)
+      setError("Factura no encontrada")
+      return
+    }
     let cancelled = false
-    fetch(`/api/invoices/${id}`)
+    setLoading(true)
+    setError(null)
+    fetch(`/api/invoices/${encodeURIComponent(id)}`)
       .then((res) => {
         if (res.status === 404) throw new Error("Factura no encontrada")
         if (!res.ok) throw new Error("Error al cargar")
@@ -57,24 +99,169 @@ export default function MarketInvoiceDetailPage() {
   }, [id])
 
   async function handleInvest() {
+    if (investInProgressRef.current) return
     if (!invoice || !address) return
+    if (invoice.status !== "en_mercado") {
+      setInvestError("Esta factura ya no está disponible para inversión.")
+      return
+    }
     setInvestError(null)
+    investInProgressRef.current = true
     setInvesting(true)
     try {
+      const toPay = amountToInvest(invoice.amount, invoice.discountRatePercent)
+      const hasTw =
+        typeof process !== "undefined" &&
+        (process.env.NEXT_PUBLIC_API_KEY || process.env.NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY) &&
+        invoice.debtorAddress
+
+      let contractId: string | undefined
+      let initTxHash: string | undefined
+      let fundTxHash: string | undefined
+
+      if (hasTw && invoice.debtorAddress) {
+        // La API exige que platformAddress y disputeResolver tengan USDC. Si no hay plataforma configurada, usamos al inversionista (quien ya tiene USDC).
+        const platformAddress =
+          (typeof process !== "undefined" &&
+            process.env.NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS?.trim()) ||
+          address
+        // La API Trustless Work espera montos en unidades "humanas" (ej. 24 USDC), no en unidades mínimas
+        const nominalMajor = Math.round(nominalToUSDCSmallestUnits(invoice.amount) / USDC_DIVISOR)
+        const toPayMajor = Math.round(nominalToUSDCSmallestUnits(toPay) / USDC_DIVISOR)
+        if (nominalMajor <= 0 || toPayMajor <= 0) {
+          throw new Error("El monto a invertir o el nominal debe ser mayor que 0")
+        }
+
+        const initPayload: InitializeSingleReleaseEscrowPayload = {
+          signer: address,
+          engagementId: invoice.id,
+          title: `Factura ${invoice.id}`,
+          description: `Inversión factura ${invoice.id} - nominal a liberar al vencimiento`,
+          amount: nominalMajor,
+          platformFee: TRUSTLESS_WORK_PLATFORM_FEE,
+          trustline: { address: USDC_TRUSTLINE_ADDRESS, symbol: USDC_SYMBOL },
+          roles: {
+            approver: invoice.debtorAddress,
+            serviceProvider: invoice.debtorAddress,
+            platformAddress,
+            releaseSigner: invoice.debtorAddress,
+            disputeResolver: platformAddress,
+            receiver: address,
+          },
+          milestones: [
+            { description: `Pago nominal factura ${invoice.id} al inversionista` },
+          ],
+        }
+
+        let initRes: Awaited<ReturnType<typeof deployEscrow>>
+        try {
+          initRes = await deployEscrow(initPayload, ESCROW_TYPE)
+        } catch (apiErr: unknown) {
+          const res = (apiErr as { response?: { data?: unknown } })?.response?.data
+          const msg =
+            typeof res === "object" && res !== null && "message" in res && typeof (res as { message: unknown }).message === "string"
+              ? (res as { message: string }).message
+              : typeof res === "object" && res !== null && "error" in res && typeof (res as { error: unknown }).error === "string"
+                ? (res as { error: string }).error
+                : (apiErr as Error)?.message
+          throw new Error(msg ? `Trustless Work: ${msg}` : "No se pudo crear el escrow")
+        }
+        if (initRes.status === "FAILED" || !initRes.unsignedTransaction) {
+          throw new Error(
+            (initRes as { message?: string }).message || "No se pudo crear el escrow"
+          )
+        }
+        const contractIdFromInit = (initRes as { contractId?: string }).contractId
+
+        const { signedTxXdr: signedInitXdr } = await signTransaction(
+          initRes.unsignedTransaction
+        )
+        const sendInitRes = await sendTransaction(signedInitXdr) as {
+          status?: string
+          contractId?: string
+          message?: string
+          transactionHash?: string
+        }
+        if (sendInitRes?.status === "FAILED") {
+          throw new Error(sendInitRes?.message || "Error al enviar la transacción del escrow")
+        }
+        contractId = contractIdFromInit ?? sendInitRes?.contractId
+        if (!contractId) {
+          throw new Error("No se recibió el contractId del escrow")
+        }
+        initTxHash = sendInitRes?.transactionHash
+
+        const fundRes = await fundEscrow(
+          { contractId, amount: toPayMajor, signer: address },
+          ESCROW_TYPE
+        )
+        if (fundRes.status === "FAILED" || !fundRes.unsignedTransaction) {
+          throw new Error(
+            (fundRes as { message?: string }).message || "No se pudo financiar el escrow"
+          )
+        }
+        const { signedTxXdr: signedFundXdr } = await signTransaction(
+          fundRes.unsignedTransaction
+        )
+        const sendFundRes = await sendTransaction(signedFundXdr) as {
+          status?: string
+          message?: string
+          transactionHash?: string
+        }
+        if (sendFundRes?.status === "FAILED") {
+          throw new Error(sendFundRes?.message || "Error al enviar el financiamiento del escrow")
+        }
+        fundTxHash = sendFundRes?.transactionHash
+      }
+
       const res = await fetch(`/api/invoices/${id}/invest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ investorAddress: address }),
+        body: JSON.stringify({
+          investorAddress: address,
+          ...(contractId && { contractId }),
+        }),
       })
-      const data = await res.json().catch(() => ({}))
+      const data = await res.json().catch(() => ({})) as { error?: string }
       if (!res.ok) {
-        throw new Error((data as { error?: string }).error || "Error al invertir")
+        const errMsg = data?.error || "Error al invertir"
+        if (res.status === 400 && errMsg.includes("no está disponible para inversión") && id) {
+          const refetchRes = await fetch(`/api/invoices/${encodeURIComponent(id)}`)
+          if (refetchRes.ok) {
+            const updated = await refetchRes.json() as Invoice
+            setInvoice(updated)
+          }
+        }
+        throw new Error(errMsg)
       }
       setConfirmOpen(false)
-      router.push("/app")
+      if (contractId) {
+        setInvestSuccess({
+          contractId,
+          initTxHash,
+          fundTxHash,
+          invoice,
+          toPay,
+        })
+      } else {
+        router.push("/app")
+      }
     } catch (e) {
-      setInvestError(e instanceof Error ? e.message : "Error al invertir")
+      const err = e as { code?: number; message?: string }
+      const raw = err instanceof Error ? err.message : String(err?.message ?? "Error al invertir")
+      const isSetWalletFirst = err?.code === -3 || /set the wallet first/i.test(raw)
+      const isUsdcTrustline =
+        /receiver|required asset|USDC|trustline/i.test(raw)
+      setInvestError(
+        isSetWalletFirst
+          ? "La sesión de la wallet no está lista para firmar. Desconecta y vuelve a conectar tu wallet (Conectar wallet), luego intenta de nuevo."
+          : isUsdcTrustline
+            ? "Tu wallet debe tener USDC (trustline) para poder invertir y recibir el pago al vencimiento. Añade el activo USDC en tu wallet (p. ej. Freighter) y vuelve a intentar."
+            : raw
+      )
+      console.error("Error al invertir:", e)
     } finally {
+      investInProgressRef.current = false
       setInvesting(false)
     }
   }
@@ -115,6 +302,118 @@ export default function MarketInvoiceDetailPage() {
           </Link>
         </Button>
         <p className="text-destructive">{error ?? "Factura no encontrada"}</p>
+      </div>
+    )
+  }
+
+  if (investSuccess) {
+    const { contractId, initTxHash, fundTxHash, invoice: inv, toPay: paid } = investSuccess
+    const expertContractUrl = getStellarExpertContractUrl(contractId)
+    return (
+      <div className="flex flex-col gap-8 max-w-2xl">
+        <Button variant="ghost" size="sm" asChild className="gap-2 w-fit">
+          <Link href="/app/market">
+            <ArrowLeft className="h-4 w-4" />
+            Volver al mercado
+          </Link>
+        </Button>
+        <div className="glass-panel p-6 border-primary/20">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <CheckCircle2 className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-display text-xl font-bold">Inversión realizada</h1>
+              <p className="text-sm text-muted-foreground">Comprobante de inversión — Trustless Work (escrow)</p>
+            </div>
+          </div>
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-6">
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">Factura</dt>
+              <dd className="mt-1 font-medium">{inv.id}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">Monto invertido</dt>
+              <dd className="mt-1 font-display font-bold">
+                ${paid.toLocaleString("es-MX")} {inv.currency}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">Nominal al vencimiento</dt>
+              <dd className="mt-1 font-display font-bold">
+                ${inv.amount.toLocaleString("es-MX")} {inv.currency}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">Descuento</dt>
+              <dd className="mt-1 font-medium">{inv.discountRatePercent}%</dd>
+            </div>
+            {inv.debtorAddress && (
+              <div className="sm:col-span-2">
+                <dt className="text-xs uppercase tracking-wider text-muted-foreground">Deudor (quien pagará al vencimiento)</dt>
+                <dd className="mt-1 font-mono text-xs break-all text-muted-foreground">
+                  {inv.debtorAddress}
+                </dd>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Esa wallet verá la factura como «por pagar» en su dashboard al conectar.
+                </p>
+              </div>
+            )}
+          </dl>
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-sm font-medium">Verificar en Stellar Expert (testnet)</p>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href={expertContractUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  Contrato escrow (Trustless Work)
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </li>
+              {initTxHash && (
+                <li>
+                  <a
+                    href={getStellarExpertTxUrl(initTxHash)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                  >
+                    Tx. inicialización escrow
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </li>
+              )}
+              {fundTxHash && (
+                <li>
+                  <a
+                    href={getStellarExpertTxUrl(fundTxHash)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                  >
+                    Tx. financiamiento (tu pago)
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </li>
+              )}
+            </ul>
+          </div>
+          <div className="mt-6 flex gap-3">
+            <Button asChild>
+              <Link href="/app">Ir al dashboard</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={expertContractUrl} target="_blank" rel="noopener noreferrer" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Stellar Expert (testnet)
+              </a>
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -176,15 +475,20 @@ export default function MarketInvoiceDetailPage() {
         </dl>
 
         {isAvailable && (
-          <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
-            <p className="text-sm font-medium text-foreground">Si inviertes ahora</p>
-            <p className="mt-1 text-2xl font-display font-bold text-primary">
-              ${toPay.toLocaleString("es-MX")} {invoice.currency}
+          <>
+            <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-sm font-medium text-foreground">Si inviertes ahora</p>
+              <p className="mt-1 text-2xl font-display font-bold text-primary">
+                ${toPay.toLocaleString("es-MX")} {invoice.currency}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                (valor nominal menos {invoice.discountRatePercent}% descuento). Al vencimiento recibes el nominal; tu ganancia es el descuento.
+              </p>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Requisito: tu wallet debe tener el activo USDC (trustline) para invertir y recibir el pago. Si no lo tienes, añádelo en tu wallet (p. ej. Freighter) antes de continuar.
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              (valor nominal menos {invoice.discountRatePercent}% descuento). Al vencimiento recibes el nominal; tu ganancia es el descuento.
-            </p>
-          </div>
+          </>
         )}
 
         {investError && (

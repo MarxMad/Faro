@@ -20,6 +20,8 @@ const VALID_STATUSES: InvoiceStatus[] = [
   "vencida",
 ]
 
+export const dynamic = "force-dynamic"
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -27,13 +29,15 @@ export async function GET(request: NextRequest) {
     const status = statusParam && VALID_STATUSES.includes(statusParam as InvoiceStatus)
       ? (statusParam as InvoiceStatus)
       : undefined
-    const provider = searchParams.get("provider") ?? undefined
-    const investor = searchParams.get("investor") ?? undefined
+    const provider = searchParams.get("provider")?.trim() ?? undefined
+    const investor = searchParams.get("investor")?.trim() ?? undefined
+    const debtor = searchParams.get("debtor")?.trim() ?? undefined
 
     const list = listInvoices({
       ...(status ? { status } : {}),
       ...(provider ? { providerAddress: provider } : {}),
       ...(investor ? { investorAddress: investor } : {}),
+      ...(debtor ? { debtorAddress: debtor } : {}),
     })
     return NextResponse.json(list)
   } catch (e) {

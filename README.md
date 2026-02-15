@@ -17,6 +17,9 @@ Faro es una plataforma de **factoraje de facturas** que conecta a **proveedores*
 - [Tecnología](#tecnología)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Configuración y ejecución](#configuración-y-ejecución)
+- [Configuración recomendada (cómo debe estar)](#configuración-recomendada-cómo-debe-estar)
+- [Guía si se desconfigura](#guía-si-se-desconfigura)
+- [Obtener USDC (testnet)](#obtener-usdc-testnet)
 - [Documentación adicional](#documentación-adicional)
 
 ---
@@ -269,7 +272,7 @@ La interfaz usa una paleta “Faro”: azul marino (confianza/seriedad) y acento
 │   └── trustless-work/      # Cliente API escrow
 ├── contracts/                 # Contratos Soroban (tokenización)
 │   ├── faro_invoice_token/    # Token fungible minteable (OpenZeppelin)
-│   └── README.md              # Build y deploy (Futurenet)
+│   └── README.md              # Build y deploy (Testnet)
 ├── docs/
 │   ├── PRODUCT-USUARIOS-Y-FLUJO.md   # Usuarios y flujo detallado
 │   ├── SEP-AND-TRUSTLESS-WORK.md     # Configuración SEP y Trustless Work
@@ -309,7 +312,74 @@ cp .env.example .env
 | `NEXT_PUBLIC_TRANSFER_SERVER_URL` | SEP-0006 Deposit/Withdrawal |
 | `NEXT_PUBLIC_TRUSTLESS_WORK_API_URL` | API Trustless Work (escrow) |
 | `TRUSTLESS_WORK_API_KEY` | API key (recomendado solo en servidor) |
+| `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS` | Cuenta Stellar con **USDC** para el rol plataforma del escrow; en test puede ser tu misma wallet de inversionista. Si no se define, se usa la del inversionista. |
 | `NEXT_PUBLIC_STELLAR_NETWORK` | `testnet` o `mainnet` |
+
+**Para invertir (escrow):** tu wallet de inversionista debe tener **USDC** (trustline). La cuenta usada como plataforma también debe tener USDC; si no configuras `NEXT_PUBLIC_TRUSTLESS_WORK_PLATFORM_ADDRESS`, se usa la del inversionista. Ver [Obtener USDC (testnet)](#obtener-usdc-testnet).
+
+### Configuración recomendada (cómo debe estar)
+
+El proyecto está configurado para **Stellar Testnet**. No modifiques red ni contrato sin seguir [contracts/README.md](contracts/README.md) para redesplegar.
+
+**Valores que deben coincidir:**
+
+| Qué | Valor correcto |
+|-----|----------------|
+| Red de la app y wallet | `NEXT_PUBLIC_STELLAR_NETWORK=testnet` |
+| RPC Soroban (front) | `NEXT_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org` |
+| RPC Soroban (backend, mint) | `SOROBAN_RPC_URL=https://soroban-testnet.stellar.org` |
+| Passphrase (backend) | `SOROBAN_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"` |
+| Contrato tokenización | `FARO_INVOICE_TOKEN_CONTRACT_ID` = ID del contrato desplegado en **testnet** (ej. el de `contracts/faro_invoice_token/deploy-testnet.sh`) |
+| API Trustless Work (dev) | `NEXT_PUBLIC_TRUSTLESS_WORK_API_URL` apuntando a testnet (ej. `https://dev.api.trustlesswork.com` si aplica) |
+
+**Cuenta admin (tokenización):** `FARO_TOKEN_ADMIN_SECRET_KEY` debe ser la clave secreta de la cuenta que se usó como `--admin` al desplegar el contrato. Esa cuenta debe tener XLM en testnet para pagar fees del `mint`.
+
+**Wallet:** En Freighter (u otra) selecciona **Testnet** para que las transacciones y los enlaces de Stellar Expert coincidan.
+
+### Guía si se desconfigura
+
+Si algo deja de funcionar (tokenizar, invertir, “Transaction not found”, facturas que no aparecen para el deudor), revisa en este orden:
+
+1. **Revisar `.env`**
+   - Que existan `SOROBAN_RPC_URL`, `SOROBAN_NETWORK_PASSPHRASE`, `FARO_INVOICE_TOKEN_CONTRACT_ID`, `FARO_TOKEN_ADMIN_SECRET_KEY` para tokenización.
+   - Que **no** mezcles testnet con futurenet: si el contrato está en testnet, las cuatro variables deben ser de testnet (RPC testnet, passphrase `"Test SDF Network ; September 2015"`, contract ID del deploy en testnet).
+   - Ver [Configuración recomendada (cómo debe estar)](#configuración-recomendada-cómo-debe-estar).
+
+2. **Reiniciar el servidor**
+   - Tras cambiar `.env`, reinicia `pnpm dev` (o `npm run dev`) para que el backend cargue las variables nuevas.
+
+3. **“Transaction not found” en Stellar Expert**
+   - El enlace usa la red de `NEXT_PUBLIC_STELLAR_NETWORK` (y para tokenize, testnet). Si la tx se envió a otra red (p. ej. por passphrase incorrecto en backend), el explorador no la mostrará.
+   - Solución: Ajusta `SOROBAN_RPC_URL` y `SOROBAN_NETWORK_PASSPHRASE` a testnet, reinicia el servidor y tokeniza de nuevo. El hash nuevo debería verse en [Stellar Expert Testnet](https://stellar.expert/explorer/testnet).
+
+4. **Tokenización (mint) falla con 502**
+   - Falta alguna variable de tokenización o la cuenta admin no tiene XLM en testnet.
+   - Solución: Comprueba las cuatro variables anteriores y fondea la cuenta admin en testnet (Friendbot o similar). Ver [contracts/README.md](contracts/README.md).
+
+5. **El deudor no ve facturas “por pagar”**
+   - La factura debe tener **Dirección Stellar del deudor** guardada al tokenizar, y el deudor debe conectar **esa misma wallet**.
+   - Solución: Al tokenizar, rellenar “Dirección Stellar del deudor” con la wallet del negocio. El deudor entra con esa wallet en el dashboard.
+
+6. **Restaurar todo a testnet**
+   - Copia de nuevo desde `.env.example` las variables de red y tokenización (las líneas de `NEXT_PUBLIC_STELLAR_NETWORK`, `NEXT_PUBLIC_SOROBAN_RPC_URL`, `SOROBAN_RPC_URL`, `SOROBAN_NETWORK_PASSPHRASE`, `FARO_INVOICE_TOKEN_CONTRACT_ID`).
+   - Si en el pasado desplegaste en testnet con `deploy-testnet.sh`, usa el `FARO_INVOICE_TOKEN_CONTRACT_ID` que imprimió ese script.
+   - Reinicia el servidor y pon la wallet en Testnet.
+
+### Obtener USDC (testnet)
+
+Para poder **invertir** en facturas con escrow en Stellar, necesitas USDC en la red que uses (p. ej. testnet):
+
+1. **Faucet Circle (recomendado)**  
+   [Circle Testnet Faucet](https://faucet.circle.com/) — elige **Stellar Testnet** y tu dirección; puedes recibir hasta 20 USDC de prueba.
+
+2. **Swap XLM → USDC por terminal (Stellar CLI)**  
+   Si ya tienes XLM en testnet, puedes hacer un path payment con la [Stellar CLI](https://developers.stellar.org/docs/tools/cli/stellar-cli):
+   - Montos en **stroops** (1 XLM = 10⁷ stroops; USDC 6 decimales).
+   - Ejemplo (reemplaza `TU_CUENTA` y montos):  
+     `stellar tx new path-payment-strict-send --source TU_CUENTA --send-asset native --send-amount 10000000 --destination TU_CUENTA --dest-asset USDC:EMISOR_USDC --dest-min 1`
+   - Ver [Stellar CLI Manual](https://developers.stellar.org/docs/tools/cli/stellar-cli) para `path-payment-strict-send` / `path-payment-strict-receive` y el emisor USDC de tu red.
+
+Detalles de swap y emisores USDC por red están en [docs/SEP-AND-TRUSTLESS-WORK.md](docs/SEP-AND-TRUSTLESS-WORK.md#obtener-usdc-testnet--swap-cli).
 
 ### Desarrollo
 
