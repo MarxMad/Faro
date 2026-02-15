@@ -19,15 +19,27 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  function fetchMarket() {
+    fetch("/api/invoices?status=en_mercado", { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Error al cargar facturas")
+        return res.json()
+      })
+      .then((data: Invoice[]) => setInvoices(Array.isArray(data) ? data : []))
+      .catch((e) => setError(e instanceof Error ? e.message : "Error"))
+      .finally(() => setLoading(false))
+  }
+
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
     fetch("/api/invoices?status=en_mercado", { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error("Error al cargar facturas")
         return res.json()
       })
       .then((data: Invoice[]) => {
-        if (!cancelled) setInvoices(data)
+        if (!cancelled) setInvoices(Array.isArray(data) ? data : [])
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : "Error")
@@ -38,6 +50,12 @@ export default function MarketplacePage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  useEffect(() => {
+    const onFocus = () => fetchMarket()
+    window.addEventListener("focus", onFocus)
+    return () => window.removeEventListener("focus", onFocus)
   }, [])
 
   const avgRate =

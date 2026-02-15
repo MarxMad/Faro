@@ -3,36 +3,21 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, CreditCard, Wallet, CheckCircle2, ExternalLink } from "lucide-react"
-import {
-  useChangeMilestoneStatus,
-  useApproveMilestone,
-  useReleaseFunds,
-  useSendTransaction,
-} from "@trustless-work/escrow"
+import { ArrowLeft, Loader2, CreditCard, Wallet, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useStellarWalletKit } from "@/lib/wallet/stellar-wallet-kit-provider"
-import { getStellarExpertTxUrl } from "@/lib/stellar-explorer-urls"
 import { toast } from "sonner"
 import type { Invoice } from "@/lib/product"
-
-const ESCROW_TYPE = "single-release" as const
-const MILESTONE_INDEX = "0"
 
 export default function PayInvoicePage() {
   const params = useParams()
   const id = params.id as string
-  const { address, isConnected, signTransaction } = useStellarWalletKit()
-  const { changeMilestoneStatus } = useChangeMilestoneStatus()
-  const { approveMilestone } = useApproveMilestone()
-  const { releaseFunds } = useReleaseFunds()
-  const { sendTransaction } = useSendTransaction()
+  const { address, isConnected } = useStellarWalletKit()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
   const [paySuccess, setPaySuccess] = useState(false)
-  const [payTxHash, setPayTxHash] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -60,78 +45,18 @@ export default function PayInvoicePage() {
     if (!invoice || !address) return
     setPaying(true)
     try {
-      const contractId = invoice.escrowId?.trim()
-      const useOnChainRelease = Boolean(
-        contractId &&
-          typeof process !== "undefined" &&
-          (process.env.NEXT_PUBLIC_API_KEY || process.env.NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY)
-      )
-
-      let lastTxHash: string | undefined
-
-      if (useOnChainRelease && contractId) {
-        const signAndSend = async (unsignedXdr: string): Promise<void> => {
-          const { signedTxXdr } = await signTransaction(unsignedXdr)
-          const res = await sendTransaction(signedTxXdr) as { status?: string; message?: string; transactionHash?: string }
-          if (res?.status === "FAILED") {
-            throw new Error((res as { message?: string }).message || "Transacción fallida")
-          }
-          if (typeof (res as { transactionHash?: string }).transactionHash === "string") {
-            lastTxHash = (res as { transactionHash: string }).transactionHash
-          }
-        }
-
-        const changeRes = await changeMilestoneStatus(
-          {
-            contractId,
-            milestoneIndex: MILESTONE_INDEX,
-            newStatus: "completed",
-            serviceProvider: address,
-          },
-          ESCROW_TYPE
-        )
-        if (changeRes.status === "FAILED" || !changeRes.unsignedTransaction) {
-          throw new Error("No se pudo marcar el hito como completado")
-        }
-        await signAndSend(changeRes.unsignedTransaction)
-
-        const approveRes = await approveMilestone(
-          { contractId, milestoneIndex: MILESTONE_INDEX, approver: address },
-          ESCROW_TYPE
-        )
-        if (approveRes.status === "FAILED" || !approveRes.unsignedTransaction) {
-          throw new Error("No se pudo aprobar el hito")
-        }
-        await signAndSend(approveRes.unsignedTransaction)
-
-        const releaseRes = await releaseFunds(
-          ESCROW_TYPE === "single-release"
-            ? { contractId, releaseSigner: address }
-            : { contractId, milestoneIndex: MILESTONE_INDEX, releaseSigner: address },
-          ESCROW_TYPE
-        )
-        if (releaseRes.status === "FAILED" || !releaseRes.unsignedTransaction) {
-          throw new Error("No se pudieron liberar los fondos del escrow")
-        }
-        await signAndSend(releaseRes.unsignedTransaction)
-      }
-
       const res = await fetch(`/api/invoices/${id}/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(useOnChainRelease && { releasedOnChain: true }),
-          ...(lastTxHash && { releaseTxHash: lastTxHash }),
-        }),
+        body: JSON.stringify({}),
       })
-      const data = await res.json().catch(() => ({})) as { error?: string; releaseTxHash?: string }
+      const data = await res.json().catch(() => ({})) as { error?: string }
       if (!res.ok) {
         throw new Error(data?.error || "Error al registrar el pago")
       }
-      setPayTxHash(data.releaseTxHash ?? lastTxHash ?? null)
       setPaySuccess(true)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error al pagar")
+      toast.error(e instanceof Error ? e.message : "Error al registrar el pago")
     } finally {
       setPaying(false)
     }
@@ -152,46 +77,15 @@ export default function PayInvoicePage() {
           </div>
           <div className="space-y-1">
             <h3 className="font-display text-2xl font-bold text-foreground">
-              Pago registrado
+              Pago confirmado
             </h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              La factura <strong>{invoice.id}</strong> ha pasado a estado pagada. El escrow se liberó y el inversionista recibió el nominal en <strong>USDC</strong>.
+              La factura <strong>{invoice.id}</strong> quedó registrada como pagada. El inversionista podrá reclamar el cobro del nominal cuando corresponda.
             </p>
           </div>
-          {payTxHash && (
-            <>
-              <p className="text-sm text-muted-foreground">Comprobante del escrow:</p>
-              <div className="w-full rounded-lg bg-secondary/80 p-3 font-mono text-xs break-all text-foreground">
-                {payTxHash}
-              </div>
-            </>
-          )}
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            {payTxHash && (
-              <Button
-                size="lg"
-                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                asChild
-              >
-                <a
-                  href={getStellarExpertTxUrl(payTxHash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Ver comprobante en Stellar Expert
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-            )}
-            <Button
-              size="lg"
-              variant={payTxHash ? "outline" : "default"}
-              asChild
-              className={!payTxHash ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
-            >
-              <Link href="/app">Ir al dashboard</Link>
-            </Button>
-          </div>
+          <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/app">Ir al dashboard</Link>
+          </Button>
         </div>
       </div>
     )
@@ -327,7 +221,7 @@ export default function PayInvoicePage() {
                 Pagar nominal (USDC)
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                Al pagar, se libera el escrow y el inversionista recibe el nominal en USDC.
+                Solo confirmas que realizaste el pago; la factura pasará a estado «pagada». El inversionista reclama el cobro por separado.
               </p>
             </div>
           )}

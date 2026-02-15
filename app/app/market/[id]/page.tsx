@@ -132,24 +132,25 @@ export default function MarketInvoiceDetailPage() {
           throw new Error("El monto a invertir o el nominal debe ser mayor que 0")
         }
 
+        // Escrow 1 (inversión): inversionista fondea; se libera cuando el proveedor cobra (receiver = proveedor, releaseSigner = proveedor).
         const initPayload: InitializeSingleReleaseEscrowPayload = {
           signer: address,
           engagementId: invoice.id,
           title: `Factura ${invoice.id}`,
-          description: `Inversión factura ${invoice.id} - nominal a liberar al vencimiento`,
+          description: `Inversión factura ${invoice.id} - liquidez al proveedor al cobrar`,
           amount: nominalMajor,
           platformFee: TRUSTLESS_WORK_PLATFORM_FEE,
           trustline: { address: USDC_TRUSTLINE_ADDRESS, symbol: USDC_SYMBOL },
           roles: {
-            approver: invoice.debtorAddress,
-            serviceProvider: invoice.debtorAddress,
+            approver: invoice.providerAddress,
+            serviceProvider: invoice.providerAddress,
             platformAddress,
-            releaseSigner: invoice.debtorAddress,
+            releaseSigner: invoice.providerAddress,
             disputeResolver: platformAddress,
-            receiver: address,
+            receiver: invoice.providerAddress,
           },
           milestones: [
-            { description: `Pago nominal factura ${invoice.id} al inversionista` },
+            { description: `Cobro de factura ${invoice.id} por el proveedor` },
           ],
         }
 
@@ -233,6 +234,23 @@ export default function MarketInvoiceDetailPage() {
           }
         }
         throw new Error(errMsg)
+      }
+      let verified = (data as Invoice | undefined)?.status === "financiada"
+      if (!verified && id) {
+        const checkRes = await fetch(`/api/invoices/${encodeURIComponent(id)}`, { cache: "no-store" })
+        if (checkRes.ok) {
+          const current = await checkRes.json() as Invoice
+          if (current.status === "en_mercado") {
+            await fetch(`/api/invoices/${encodeURIComponent(id)}/invest`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                investorAddress: address,
+                ...(contractId && { contractId }),
+              }),
+            })
+          }
+        }
       }
       setConfirmOpen(false)
       if (contractId) {

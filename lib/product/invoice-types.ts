@@ -28,8 +28,12 @@ export interface Invoice {
   createdAt: string
   /** Cuando está financiada: wallet del inversionista */
   investorAddress?: string | null
-  /** Cuando está financiada: id del escrow (Trustless Work) si aplica */
+  /** Cuando está financiada: id del escrow de inversión (Trustless Work); se libera cuando el proveedor cobra */
   escrowId?: string | null
+  /** Cuando está pagada: id del escrow nominal (deudor → inversionista), si aplica */
+  escrowNominalId?: string | null
+  /** Fecha ISO en que el proveedor cobró el escrow de inversión (para ocultar "Cobrar factura") */
+  providerClaimedAt?: string | null
   /** Hash de la tx Soroban que minteó tokens (tokenización on-chain), si aplica */
   tokenizeTxHash?: string | null
 }

@@ -108,6 +108,9 @@ importers:
       '@stellar/stellar-sdk':
         specifier: ^14.5.0
         version: 14.5.0
+      '@trustless-work/escrow':
+        specifier: ^3.0.5
+        version: 3.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.23(postcss@8.5.6)
@@ -2038,6 +2041,12 @@ packages:
     resolution: {integrity: sha512-vu9L1V/5yh8LHQCmsGC9scCnihELsVuR5Tri1IvW3CdgTUFFcfjsEgXsFqFME3HlxuUmx6qokw0Gx/o0/hzaSQ==}
     peerDependencies:
       tslib: ^2.6.2
+
+  '@trustless-work/escrow@3.0.5':
+    resolution: {integrity: sha512-IFvu/4K5rYJzucQvIfiAVSdt8QeBjHLDiWcxlmKCQN36gJ8906QMBssSyug/BuBA1ShGTWk1Yn9BfcPUSEQhhw==}
+    peerDependencies:
+      react: '>=18.0.0 <20.0.0'
+      react-dom: '>=18.0.0 <20.0.0'
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -6292,6 +6301,14 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@trustless-work/escrow@3.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      axios: 1.13.5
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+    transitivePeerDependencies:
+      - debug
 
   '@types/connect@3.4.38':
     dependencies:

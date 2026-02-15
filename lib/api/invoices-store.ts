@@ -1,59 +1,67 @@
 /**
  * Almacenamiento de facturas para MVP.
- * Lee y escribe en data/invoices.json para que las facturas persistan entre peticiones y reinicios.
+ * Lee y escribe en data/invoices.json en cada operación para que las facturas
+ * persistan correctamente entre peticiones y entre workers (ej. dev server con varios procesos).
  * Sustituir por base de datos en producción.
  */
 
-import { readFileSync, writeFileSync, existsSync } from "fs"
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs"
 import { join } from "path"
 import type { Invoice, InvoiceCreateInput } from "@/lib/product"
 
 const DATA_DIR = join(process.cwd(), "data")
 const FILE_PATH = join(DATA_DIR, "invoices.json")
 
-const store: Invoice[] = []
-let nextId = 1
-let loaded = false
+interface StoredData {
+  nextId: number
+  invoices: Invoice[]
+}
 
-function ensureLoaded(): void {
-  if (loaded && store.length > 0) return
-  loaded = true
+function readFromFile(): StoredData {
+  const defaultData: StoredData = { nextId: 1, invoices: [] }
   try {
-    if (existsSync(FILE_PATH)) {
-      const raw = readFileSync(FILE_PATH, "utf-8")
-      const data = JSON.parse(raw) as { nextId?: number; invoices?: Invoice[] }
-      if (Array.isArray(data.invoices)) {
-        store.length = 0
-        store.push(...data.invoices)
-      }
-      if (typeof data.nextId === "number" && data.nextId > 0) {
-        nextId = data.nextId
-      }
+    if (!existsSync(FILE_PATH)) {
+      return defaultData
+    }
+    const raw = readFileSync(FILE_PATH, "utf-8")
+    const data = JSON.parse(raw) as Partial<StoredData>
+    if (!data || typeof data.nextId !== "number" || !Array.isArray(data.invoices)) {
+      return defaultData
+    }
+    return {
+      nextId: data.nextId > 0 ? data.nextId : 1,
+      invoices: data.invoices,
     }
   } catch (e) {
-    console.error("[invoices-store] Error loading data:", e)
-    loaded = false
+    console.error("[invoices-store] Error reading file:", e)
+    return defaultData
   }
 }
 
-function serializeSave(): void {
+function writeToFile(data: StoredData): void {
   try {
-    const payload = { nextId, invoices: [...store] }
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true })
+    }
+    const payload = { nextId: data.nextId, invoices: data.invoices }
     writeFileSync(FILE_PATH, JSON.stringify(payload, null, 0), "utf-8")
   } catch (e) {
-    console.error("[invoices-store] Error saving data:", e)
+    console.error("[invoices-store] Error writing file:", e)
+    throw e
   }
 }
 
-function generateId(): string {
-  return `FAC-${String(nextId++).padStart(3, "0")}`
+function generateId(nextId: number): string {
+  return `FAC-${String(nextId).padStart(3, "0")}`
 }
 
 export function createInvoice(input: InvoiceCreateInput): Invoice {
-  ensureLoaded()
+  const data = readFromFile()
   const now = new Date().toISOString()
+  const id = generateId(data.nextId)
+  data.nextId += 1
   const invoice: Invoice = {
-    id: generateId(),
+    id,
     providerAddress: input.providerAddress,
     emitterName: input.emitterName,
     debtorName: input.debtorName,
@@ -66,10 +74,12 @@ export function createInvoice(input: InvoiceCreateInput): Invoice {
     createdAt: now,
     investorAddress: null,
     escrowId: null,
+    escrowNominalId: null,
+    providerClaimedAt: null,
     tokenizeTxHash: null,
   }
-  store.push(invoice)
-  serializeSave()
+  data.invoices.push(invoice)
+  writeToFile(data)
   return invoice
 }
 
@@ -77,11 +87,11 @@ export function setInvoiceTokenizeTxHash(
   id: string,
   tokenizeTxHash: string
 ): Invoice | null {
-  ensureLoaded()
-  const invoice = store.find((i) => i.id === id)
+  const data = readFromFile()
+  const invoice = data.invoices.find((i) => i.id === id)
   if (!invoice) return null
   invoice.tokenizeTxHash = tokenizeTxHash
-  serializeSave()
+  writeToFile(data)
   return invoice
 }
 
@@ -91,12 +101,11 @@ export function listInvoices(filters?: {
   investorAddress?: string
   debtorAddress?: string
 }): Invoice[] {
-  ensureLoaded()
-  let list = [...store]
+  const data = readFromFile()
+  let list = [...data.invoices]
   if (filters?.status) {
     list = list.filter((i) => i.status === filters.status)
   }
-  // Normalizar direcciones para comparar (trim + minúsculas) y asignar correctamente facturas por rol
   if (filters?.providerAddress) {
     const needle = filters.providerAddress.trim().toLowerCase()
     if (needle) {
@@ -132,10 +141,10 @@ export function listInvoices(filters?: {
 }
 
 export function getInvoiceById(id: string): Invoice | undefined {
-  ensureLoaded()
+  const data = readFromFile()
   const needle = typeof id === "string" ? id.trim() : ""
   if (!needle) return undefined
-  return store.find((i) => i.id === needle)
+  return data.invoices.find((i) => i.id === needle)
 }
 
 export function setInvoiceInvested(
@@ -143,24 +152,36 @@ export function setInvoiceInvested(
   investorAddress: string,
   escrowId?: string
 ): Invoice | null {
-  ensureLoaded()
-  const invoice = store.find((i) => i.id === id)
+  const data = readFromFile()
+  const invoice = data.invoices.find((i) => i.id === id)
   if (!invoice || invoice.status !== "en_mercado") return null
-  // Solo actualizar estos campos; no tocar debtorAddress para que la factura siga apareciendo al deudor
   invoice.status = "financiada"
   invoice.investorAddress = investorAddress
   invoice.escrowId = escrowId ?? null
-  serializeSave()
+  writeToFile(data)
   return invoice
 }
 
-export function setInvoicePaid(id: string): Invoice | null {
-  ensureLoaded()
-  const invoice = store.find((i) => i.id === id)
+export function setInvoicePaid(
+  id: string,
+  escrowNominalId?: string | null
+): Invoice | null {
+  const data = readFromFile()
+  const invoice = data.invoices.find((i) => i.id === id)
   if (!invoice || invoice.status !== "financiada") return null
   const preservedDebtorAddress = invoice.debtorAddress
   invoice.status = "pagada"
   if (preservedDebtorAddress !== undefined) invoice.debtorAddress = preservedDebtorAddress
-  serializeSave()
+  if (escrowNominalId !== undefined) invoice.escrowNominalId = escrowNominalId ?? null
+  writeToFile(data)
+  return invoice
+}
+
+export function setProviderClaimed(id: string): Invoice | null {
+  const data = readFromFile()
+  const invoice = data.invoices.find((i) => i.id === id)
+  if (!invoice) return null
+  invoice.providerClaimedAt = new Date().toISOString()
+  writeToFile(data)
   return invoice
 }

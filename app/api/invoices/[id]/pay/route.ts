@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getInvoiceById, setInvoicePaid } from "@/lib/api/invoices-store"
-import { releaseEscrow } from "@/lib/trustless-work/client"
 
 /**
  * POST /api/invoices/[id]/pay
- * Marca la factura como pagada (negocio pagó el nominal).
- * Si el escrow se creó on-chain (contractId), el front ya liberó con Trustless Work;
- * en ese caso el body puede traer releaseTxHash y no se llama a la API REST.
- * Si el escrow es vía REST (sin contractId desde el front), se llama releaseEscrow.
- * Body opcional: { releaseTxHash?: string; releasedOnChain?: boolean }.
+ * Solo marca la factura como pagada (confirmación del deudor).
+ * No se libera ningún escrow aquí; el dinero al inversionista se maneja en el flujo de "Reclamar cobro".
+ * Body opcional: { escrowNominalId?: string } para cuando exista Escrow 2 (Fase C).
  */
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -28,49 +25,17 @@ export async function POST(
       )
     }
 
-    const body = await request.json().catch(() => ({})) as { releaseTxHash?: string; releasedOnChain?: boolean }
-    const releasedOnChain = Boolean(body?.releasedOnChain ?? body?.releaseTxHash)
+    const body = await _request.json().catch(() => ({})) as { escrowNominalId?: string }
+    const escrowNominalId = typeof body?.escrowNominalId === "string" ? body.escrowNominalId : undefined
 
-    let releaseTxHash: string | undefined = body?.releaseTxHash
-
-    if (
-      invoice.escrowId &&
-      process.env.TRUSTLESS_WORK_API_KEY &&
-      !releasedOnChain
-    ) {
-      try {
-        const releaseResult = await releaseEscrow(invoice.escrowId)
-        const raw = releaseResult as Record<string, unknown>
-        releaseTxHash =
-          typeof raw?.transaction_hash === "string"
-            ? raw.transaction_hash
-            : typeof raw?.tx_hash === "string"
-              ? raw.tx_hash
-              : typeof raw?.last_transaction_id === "string"
-                ? raw.last_transaction_id
-                : undefined
-      } catch (err) {
-        console.error("Trustless Work releaseEscrow failed:", err)
-        return NextResponse.json(
-          {
-            error:
-              err instanceof Error
-                ? err.message
-                : "Error al liberar el escrow en Trustless Work",
-          },
-          { status: 502 }
-        )
-      }
-    }
-
-    const updated = setInvoicePaid(idStr)
+    const updated = setInvoicePaid(idStr, escrowNominalId ?? null)
     if (!updated) {
       return NextResponse.json(
         { error: "No se pudo marcar la factura como pagada" },
         { status: 409 }
       )
     }
-    return NextResponse.json({ ...updated, releaseTxHash: releaseTxHash ?? undefined })
+    return NextResponse.json(updated)
   } catch (e) {
     console.error(e)
     return NextResponse.json(

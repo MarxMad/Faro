@@ -14,6 +14,7 @@ import {
   Wallet,
   CreditCard,
   ExternalLink,
+  Banknote,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -342,7 +343,9 @@ export default function DashboardPage() {
                             href={
                               row.role === "deudor" && row.status === "financiada"
                                 ? `/app/pay/${row.id}`
-                                : `/app/market/${row.id}`
+                                : row.role === "provider" && row.status === "financiada" && !row.providerClaimedAt
+                                  ? `/app/claim-provider/${row.id}`
+                                  : `/app/market/${row.id}`
                             }
                             className="hover:underline"
                           >
@@ -379,6 +382,13 @@ export default function DashboardPage() {
                               <Link href={`/app/pay/${row.id}`}>
                                 <CreditCard className="h-3.5 w-3.5" />
                                 Pagar
+                              </Link>
+                            </Button>
+                          ) : row.role === "provider" && row.status === "financiada" && !row.providerClaimedAt ? (
+                            <Button asChild size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+                              <Link href={`/app/claim-provider/${row.id}`}>
+                                <Banknote className="h-3.5 w-3.5" />
+                                Cobrar factura
                               </Link>
                             </Button>
                           ) : (
