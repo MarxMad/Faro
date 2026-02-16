@@ -46,10 +46,9 @@ export function Hero() {
           </div>
 
           <h1 className="font-display text-balance text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-            El faro que alumbra{" "}
-            <br className="hidden sm:block" />
+            Liquidez real.{" "}
             <span className="bg-gradient-to-r from-[hsl(var(--accent))] via-[hsl(var(--accent))] to-[hsl(var(--accent))]/90 bg-clip-text text-transparent">
-              y guía tu negocio
+              Para tu negocio.
             </span>
           </h1>
 
@@ -58,14 +57,14 @@ export function Hero() {
             respaldo on-chain, sin bancos ni burocracia. Seriedad y transparencia.
           </p>
 
-          {/* Tags flotantes tipo Boundless */}
-          <div className="absolute right-[10%] top-[30%] hidden rounded-lg border border-[hsl(var(--accent))]/30 bg-card/90 px-3 py-2 shadow-lg backdrop-blur sm:block">
+          {/* Tags flotantes: fuera del área del título para no tapar texto */}
+          <div className="absolute right-[8%] top-[52%] hidden rounded-lg border border-[hsl(var(--accent))]/30 bg-card/90 px-3 py-2 shadow-lg backdrop-blur sm:block">
             <span className="text-xs font-semibold text-[hsl(var(--accent))]">Escrow seguro</span>
           </div>
           <div className="absolute left-[8%] top-[45%] hidden rounded-lg border border-[hsl(var(--accent))]/30 bg-card/90 px-3 py-2 shadow-lg backdrop-blur md:block">
             <span className="text-xs font-semibold text-[hsl(var(--accent))]">Liquidez 48h</span>
           </div>
-          <div className="absolute right-[15%] bottom-[25%] hidden rounded-lg border border-[hsl(var(--accent))]/30 bg-card/90 px-3 py-2 shadow-lg backdrop-blur lg:block">
+          <div className="absolute right-[12%] bottom-[28%] hidden rounded-lg border border-[hsl(var(--accent))]/30 bg-card/90 px-3 py-2 shadow-lg backdrop-blur lg:block">
             <span className="text-xs font-semibold text-[hsl(var(--accent))]">8–10% descuento</span>
           </div>
 
