@@ -301,7 +301,7 @@ export default function ClaimProviderPage() {
                 Esta factura debe ser cobrada por la wallet del proveedor
               </p>
               <p className="mt-2 text-muted-foreground">
-                Tu wallet actual no coincide con la dirección del proveedor. Conecta la wallet con la que tokenizaste esta factura.
+                Tu wallet actual no coincide con la dirección del proveedor. Conecta la wallet con la que subiste esta factura.
               </p>
             </div>
           ) : !invoice.escrowId ? (

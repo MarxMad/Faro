@@ -18,9 +18,9 @@ const steps = [
   {
     icon: Coins,
     number: "03",
-    title: "Tokenizacion en Stellar",
+    title: "Certificación en Stellar",
     description:
-      "La factura se convierte en un token RWA con un contrato inteligente que garantiza los terminos.",
+      "La factura se certifica en la red con un contrato inteligente que garantiza los términos.",
   },
   {
     icon: Banknote,

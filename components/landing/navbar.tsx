@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Menu, X } from "lucide-react"
 import {
   SignInButton,
@@ -26,9 +27,14 @@ export function Navbar() {
     <nav className="fixed top-0 z-50 w-full border-b border-primary/10 bg-[hsl(var(--background))]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm">
-            <span className="font-display text-sm font-bold text-primary-foreground">F</span>
-          </div>
+          <Image
+            src="/Farologo.svg"
+            alt="Faro"
+            width={36}
+            height={36}
+            className="h-8 w-auto"
+            priority
+          />
           <span className="font-display text-xl font-bold text-foreground">Faro</span>
         </Link>
 

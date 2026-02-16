@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { getStellarExpertTxUrl } from "@/lib/stellar-explorer-urls"
+import { resolveStellarAddressIfConfigured } from "@/lib/stellarsep"
 import {
   useStellarWalletKit,
   FUTURENET_PASSPHRASE,
@@ -101,9 +102,9 @@ export default function TokenizePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-2xl font-bold">Tokenizar factura</h1>
+        <h1 className="font-display text-2xl font-bold">Certifica tu factura</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sube tu factura y conviertela en un token digital en Stellar
+          Sube tu factura y certifícala en Stellar para que aparezca en el mercado y los inversores la financien.
         </p>
       </div>
 
@@ -284,13 +285,13 @@ export default function TokenizePage() {
                   Dirección Stellar del deudor (recomendado para escrow)
                 </Label>
                 <Input
-                  placeholder="G..."
+                  placeholder="G... o nombre*dominio.com"
                   value={form.debtorAddress}
                   onChange={(e) => setForm((f) => ({ ...f, debtorAddress: e.target.value.trim() }))}
                   className="bg-secondary/50 border-border font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Necesaria para crear escrow (Trustless Work) al invertir y para que el negocio (deudor) vea la factura como «por pagar» en su dashboard y pueda pagar el nominal al vencimiento. Si no la indicas, el deudor no verá esta factura.
+                  Cuenta Stellar (G...) o dirección federada (ej. deudor*banco.com). Si usas federación, se resolverá al enviar. Necesaria para escrow y para que el deudor vea la factura y pueda pagar.
                 </p>
               </div>
               <div className="flex flex-col gap-2">
@@ -350,10 +351,10 @@ export default function TokenizePage() {
                   <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
                 <h3 className="font-display text-lg font-bold text-green-800 dark:text-green-300">
-                  Factura tokenizada correctamente
+                  Factura certificada correctamente
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Los tokens se registraron en tu wallet. Comprobante:
+                  Tu factura quedó registrada en la red. Comprobante:
                 </p>
                 <div className="w-full rounded-lg bg-secondary/80 p-3 font-mono text-xs break-all text-foreground">
                   {successTxHash}
@@ -397,7 +398,7 @@ export default function TokenizePage() {
                       Tu wallet no está en la red configurada
                     </p>
                     <p className="text-muted-foreground">
-                      La tokenización on-chain usa la red configurada en la app. Cambia la red
+                      El registro en red usa la red configurada en la app. Cambia la red
                       en tu extensión (Freighter: menú → Red) para que coincida (p. ej. Testnet) y vuelve a verificar.
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -450,10 +451,10 @@ export default function TokenizePage() {
               <CheckCircle2 className="h-8 w-8 text-primary" />
             </div>
             <div className="text-center">
-              <h3 className="font-display text-xl font-bold">Listo para tokenizar</h3>
+              <h3 className="font-display text-xl font-bold">Listo para certificar</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Tu factura será tokenizada en la red Stellar con contratos OpenZeppelin (RWA)
-                y publicada en el mercado para que inversores la financien.
+                Tu factura se certificará en la red Stellar y se publicará en el mercado
+                para que los inversores la financien.
               </p>
             </div>
 
@@ -512,13 +513,26 @@ export default function TokenizePage() {
                 onClick={async () => {
                   if (submitInProgressRef.current) return
                   if (!address) {
-                    setSubmitError("Conecta tu wallet para tokenizar.")
+                    setSubmitError("Conecta tu wallet para subir la factura.")
                     return
                   }
                   setSubmitError(null)
                   submitInProgressRef.current = true
                   setSubmitting(true)
                   try {
+                    let debtorAddressToSend = form.debtorAddress
+                    if (form.debtorAddress && form.debtorAddress.includes("*")) {
+                      const resolved = await resolveStellarAddressIfConfigured(form.debtorAddress)
+                      if (!resolved) {
+                        toast.error(
+                          "Dirección federada no resuelta. Configura NEXT_PUBLIC_FEDERATION_SERVER_URL en .env o usa una cuenta G..."
+                        )
+                        setSubmitting(false)
+                        submitInProgressRef.current = false
+                        return
+                      }
+                      debtorAddressToSend = resolved.account_id
+                    }
                     const res = await fetch("/api/invoices", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -526,7 +540,7 @@ export default function TokenizePage() {
                         providerAddress: address,
                         emitterName: form.emitterName,
                         debtorName: form.debtorName,
-                        ...(form.debtorAddress ? { debtorAddress: form.debtorAddress } : {}),
+                        ...(debtorAddressToSend ? { debtorAddress: debtorAddressToSend } : {}),
                         amount: form.amount,
                         currency: form.currency,
                         dueDate: form.dueDate,
@@ -550,7 +564,7 @@ export default function TokenizePage() {
                     console.log("[Tokenize] Factura creada:", data.id, "tx:", txHash ?? "sin tx on-chain")
                     if (txHash) {
                       setSuccessTxHash(txHash)
-                      toast.success("Factura tokenizada en Stellar", {
+                      toast.success("Factura certificada en Stellar", {
                         description: `Tx: ${txHash.slice(0, 12)}…`,
                         action: {
                           label: "Ver comprobante en Stellar Expert",
@@ -575,7 +589,7 @@ export default function TokenizePage() {
                         router.push("/app")
                       }, 4000)
                     } else {
-                      toast.success("Factura creada (sin tokenización on-chain)")
+                      toast.success("Factura creada (sin registro en red)")
                       setTimeout(() => {
                         setCurrentStep("upload")
                         setFile(null)
@@ -585,7 +599,7 @@ export default function TokenizePage() {
                     }
                   } catch (e) {
                     console.error("[Tokenize] Error:", e)
-                    setSubmitError(e instanceof Error ? e.message : "Error al tokenizar")
+                    setSubmitError(e instanceof Error ? e.message : "Error al subir la factura")
                   } finally {
                     submitInProgressRef.current = false
                     setSubmitting(false)
@@ -595,10 +609,10 @@ export default function TokenizePage() {
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Tokenizando...
+                    Subiendo factura...
                   </>
                 ) : (
-                  "Tokenizar factura"
+                  "Subir factura"
                 )}
               </Button>
             </div>

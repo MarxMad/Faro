@@ -3,9 +3,9 @@ import { FileText, Landmark, ShieldCheck, Clock, BarChart3, Globe } from "lucide
 const features = [
   {
     icon: FileText,
-    title: "Tokenizacion de facturas",
+    title: "Certificación de facturas",
     description:
-      "Convierte tus cuentas por cobrar en tokens digitales respaldados por activos reales (RWA) en Stellar.",
+      "Sube y certifica tus facturas por cobrar en Stellar. Quedan respaldadas como activos reales (RWA) y disponibles para que los inversores las financien.",
   },
   {
     icon: Clock,

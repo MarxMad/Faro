@@ -1,10 +1,11 @@
 "use client"
 
+import Image from "next/image"
 import { Shield, Sparkles, TrendingUp } from "lucide-react"
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button"
 
 const stats = [
-  { value: "$2.4M", label: "Facturas tokenizadas" },
+  { value: "$2.4M", label: "Facturas certificadas" },
   { value: "340+", label: "PyMEs activas" },
   { value: "< 48h", label: "Tiempo de liquidez" },
 ]
@@ -25,6 +26,19 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-6 py-24">
         <div className="flex flex-col items-center text-center">
+          {/* Logo con animación suave */}
+          <div className="mb-6 flex justify-center">
+            <div className="animate-hero-logo-glow relative rounded-2xl p-1">
+              <Image
+                src="/Farologo.svg"
+                alt="Faro"
+                width={120}
+                height={120}
+                className="h-20 w-auto sm:h-24 md:h-28 drop-shadow-lg"
+                priority
+              />
+            </div>
+          </div>
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/10 px-4 py-2">
             <Sparkles className="h-4 w-4 text-[hsl(var(--accent))]" />
             <span className="text-sm font-medium text-primary">
@@ -41,7 +55,7 @@ export function Hero() {
           </h1>
 
           <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground md:text-xl">
-            Liquidez inmediata para tu PyME. Tokeniza facturas por cobrar con
+            Liquidez inmediata para tu PyME. Certifica y sube facturas por cobrar con
             respaldo on-chain, sin bancos ni burocracia. Seriedad y transparencia.
           </p>
 
@@ -91,6 +105,33 @@ export function Hero() {
               <span className="text-sm font-medium">Rendimientos claros</span>
             </div>
           </div>
+
+          {/* Espacio para imágenes y animaciones: ilustraciones, vídeos o gráficos */}
+          <section
+            id="hero-visual"
+            className="mt-20 w-full max-w-5xl mx-auto"
+            aria-label="Visualización"
+          >
+            <div className="relative min-h-[280px] sm:min-h-[320px] rounded-2xl border border-primary/15 bg-primary/[0.02] overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4 text-muted-foreground/70">
+                  <div className="h-24 w-24 rounded-xl border-2 border-dashed border-primary/20 flex items-center justify-center bg-primary/[0.03]">
+                    <Image
+                      src="/Farologo.svg"
+                      alt=""
+                      width={64}
+                      height={64}
+                      className="opacity-60"
+                    />
+                  </div>
+                  <p className="text-sm font-medium">Espacio para ilustraciones y animaciones</p>
+                  <p className="text-xs max-w-sm text-center">
+                    Aquí puedes integrar diagramas del flujo, vídeos o animaciones del producto.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </section>

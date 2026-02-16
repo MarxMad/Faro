@@ -51,7 +51,7 @@ const overlayCards = [
     icon: DollarSign,
     title: "Liquidez movilizada",
     value: "$2.4M",
-    subtitle: "En facturas tokenizadas",
+    subtitle: "En facturas certificadas",
   },
 ]
 

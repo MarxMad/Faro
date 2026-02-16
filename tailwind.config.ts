@@ -88,10 +88,15 @@ const config: Config = {
             height: '0',
           },
         },
+        'hero-logo-glow': {
+          '0%, 100%': { boxShadow: '0 0 20px -2px hsl(var(--beacon-glow) / 0.15)' },
+          '50%': { boxShadow: '0 0 32px 2px hsl(var(--beacon-glow) / 0.25)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'hero-logo-glow': 'hero-logo-glow 3s ease-in-out infinite',
       },
     },
   },
