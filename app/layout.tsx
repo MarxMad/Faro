@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
-import { ClerkProvider } from "@clerk/nextjs"
 
+import { AuthProvider } from "@/components/providers/auth-provider"
 import { ClientProviders } from "@/components/providers/client-providers"
 import "./globals.css"
 
@@ -79,9 +79,9 @@ export default function RootLayout({
   return (
     <html lang="es" className={plusJakarta.variable}>
       <body className="min-h-screen font-sans antialiased">
-        <ClerkProvider>
+        <AuthProvider>
           <ClientProviders>{children}</ClientProviders>
-        </ClerkProvider>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -41,7 +41,9 @@ function formatRelativeDate(dateStr: string): string {
 }
 
 function getStatusClass(status: Invoice["status"]) {
-  if (status === "financiada" || status === "pagada")
+  if (status === "pagada")
+    return "bg-emerald-500/20 text-emerald-200 border-emerald-500/30 hover:bg-emerald-500/25"
+  if (status === "financiada")
     return "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
   if (status === "en_mercado")
     return "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] border-[hsl(var(--accent))]/20"
@@ -463,7 +465,7 @@ export default function DashboardPage() {
                         key={`${row.id}-${row.role}`}
                         className="border-b border-border/50 transition-colors last:border-0 hover:bg-muted/20"
                       >
-                        <td className="px-6 py-4 text-sm font-medium text-primary">
+                        <td className="px-6 py-4 text-sm font-medium text-foreground">
                           <Link
                             href={
                               row.role === "deudor" && row.status === "financiada"

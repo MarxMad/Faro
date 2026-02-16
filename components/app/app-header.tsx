@@ -1,37 +1,48 @@
 "use client"
 
+import Link from "next/link"
+import Image from "next/image"
 import { Bell } from "lucide-react"
-import {
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
+import { AuthSignedIn, AuthSignedOut } from "@/components/auth/auth-gates"
+import {
+  AuthSignInButton,
+  AuthSignUpButton,
+  AuthUserButton,
+} from "@/components/auth/auth-buttons"
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button"
 
 export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
-      <div>
-        <h2 className="text-sm font-medium text-muted-foreground">
+      <div className="flex items-center gap-4">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Image
+            src="/Farologo.svg"
+            alt="Faro"
+            width={28}
+            height={28}
+            className="h-7 w-auto"
+          />
+          <span className="font-display text-base font-bold text-foreground hidden sm:inline">Faro</span>
+        </Link>
+        <h2 className="text-sm font-medium text-muted-foreground border-l border-border pl-4 hidden md:block">
           Bienvenido de nuevo
         </h2>
       </div>
 
       <div className="flex items-center gap-3">
-        <SignedOut>
-          <SignInButton mode="modal">
+        <AuthSignedOut>
+          <AuthSignInButton mode="modal">
             <Button variant="ghost" size="sm">
               Iniciar sesión
             </Button>
-          </SignInButton>
-          <SignUpButton mode="modal">
+          </AuthSignInButton>
+          <AuthSignUpButton mode="modal">
             <Button size="sm">Registrarse</Button>
-          </SignUpButton>
-        </SignedOut>
-        <SignedIn>
+          </AuthSignUpButton>
+        </AuthSignedOut>
+        <AuthSignedIn>
           <Button
             variant="ghost"
             size="icon"
@@ -42,7 +53,7 @@ export function AppHeader() {
             <span className="sr-only">Notificaciones</span>
           </Button>
           <ConnectWalletButton />
-          <UserButton
+          <AuthUserButton
             afterSignOutUrl="/"
             appearance={{
               elements: {
@@ -50,7 +61,7 @@ export function AppHeader() {
               },
             }}
           />
-        </SignedIn>
+        </AuthSignedIn>
       </div>
     </header>
   )

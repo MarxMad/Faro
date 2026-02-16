@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, FileText, Store, Settings, ChevronLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,9 +20,13 @@ export function AppSidebar() {
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border bg-sidebar">
       <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary shadow-sm">
-            <span className="font-display text-sm font-bold text-sidebar-primary-foreground">F</span>
-          </div>
+          <Image
+            src="/Farologo.svg"
+            alt="Faro"
+            width={32}
+            height={32}
+            className="h-8 w-auto"
+          />
           <span className="font-display text-lg font-bold text-sidebar-foreground">Faro</span>
         </Link>
       </div>

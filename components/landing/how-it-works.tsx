@@ -33,10 +33,10 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative py-24 bg-gradient-to-b from-primary/[0.04] to-background">
+    <section id="how-it-works" className="relative py-24 bg-background">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
-          <span className="text-sm font-medium uppercase tracking-widest text-primary">
+          <span className="text-sm font-medium uppercase tracking-widest text-[hsl(var(--accent))]">
             Proceso
           </span>
           <h2 className="mt-4 font-display text-balance text-3xl font-bold sm:text-4xl text-foreground">
@@ -65,7 +65,7 @@ export function HowItWorks() {
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))]">
                         <step.icon className="h-6 w-6" />
                       </div>
                       <div>
@@ -83,7 +83,7 @@ export function HowItWorks() {
                   </div>
                 </div>
 
-                <div className="absolute left-8 top-1/2 hidden h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-background md:left-1/2 md:block" />
+                <div className="absolute left-8 top-1/2 hidden h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[hsl(var(--accent))] bg-background md:left-1/2 md:block" />
 
                 <div className="hidden flex-1 md:block" />
               </div>

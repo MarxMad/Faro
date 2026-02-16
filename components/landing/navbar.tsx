@@ -4,14 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Menu, X } from "lucide-react"
-import {
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs"
 import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button"
+import { AuthSignedIn, AuthSignedOut } from "@/components/auth/auth-gates"
+import {
+  AuthSignInButton,
+  AuthSignUpButton,
+  AuthUserButton,
+} from "@/components/auth/auth-buttons"
 import { Button } from "@/components/ui/button"
 
 const navLinks = [
@@ -24,7 +23,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-primary/10 bg-[hsl(var(--background))]/90 backdrop-blur-xl">
+    <nav className="fixed top-0 z-50 w-full border-b border-[hsl(var(--accent))]/15 bg-[hsl(var(--background))]/95 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -51,17 +50,17 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <SignedOut>
-            <SignInButton mode="modal">
+          <AuthSignedOut>
+            <AuthSignInButton mode="modal">
               <Button variant="ghost" size="sm">
                 Iniciar sesión
               </Button>
-            </SignInButton>
-            <SignUpButton mode="modal">
+            </AuthSignInButton>
+            <AuthSignUpButton mode="modal">
               <Button size="sm">Registrarse</Button>
-            </SignUpButton>
-          </SignedOut>
-          <SignedIn>
+            </AuthSignUpButton>
+          </AuthSignedOut>
+          <AuthSignedIn>
             <Button variant="outline" size="sm" asChild>
               <Link href="/app">Ir al dashboard</Link>
             </Button>
@@ -70,8 +69,8 @@ export function Navbar() {
               redirectOnConnect
               variant="outline"
             />
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+            <AuthUserButton afterSignOutUrl="/" />
+          </AuthSignedIn>
         </div>
 
         <button
@@ -97,17 +96,17 @@ export function Navbar() {
               </a>
             ))}
             <div className="flex flex-col gap-3 border-t border-border/40 pt-4">
-              <SignedOut>
-                <SignInButton mode="modal">
+              <AuthSignedOut>
+                <AuthSignInButton mode="modal">
                   <Button variant="outline" className="w-full">
                     Iniciar sesión
                   </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
+                </AuthSignInButton>
+                <AuthSignUpButton mode="modal">
                   <Button className="w-full">Registrarse</Button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
+                </AuthSignUpButton>
+              </AuthSignedOut>
+              <AuthSignedIn>
                 <Button variant="outline" className="w-full" asChild>
                   <Link href="/app">Ir al dashboard</Link>
                 </Button>
@@ -117,9 +116,9 @@ export function Navbar() {
                   variant="primary"
                 />
                 <div className="flex justify-center">
-                  <UserButton afterSignOutUrl="/" />
+                  <AuthUserButton afterSignOutUrl="/" />
                 </div>
-              </SignedIn>
+              </AuthSignedIn>
             </div>
           </div>
         </div>

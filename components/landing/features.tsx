@@ -69,10 +69,10 @@ const comparison = [
 
 export function Features() {
   return (
-    <section id="features" className="relative py-24 bg-gradient-to-b from-primary/[0.04] to-background">
+    <section id="features" className="relative py-24 bg-background">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
-          <span className="text-sm font-medium uppercase tracking-widest text-primary">
+          <span className="text-sm font-medium uppercase tracking-widest text-[hsl(var(--accent))]">
             Características
           </span>
           <h2 className="mt-4 font-display text-balance text-3xl font-bold sm:text-4xl text-foreground">
@@ -89,9 +89,9 @@ export function Features() {
             return (
             <div
               key={feature.title}
-              className={`glass-panel group p-6 transition-all hover:shadow-md ${useAccent ? "hover:border-[hsl(var(--accent))]/25" : "hover:border-primary/30"}`}
+              className={`glass-panel group p-6 transition-all hover:shadow-md ${useAccent ? "hover:border-[hsl(var(--accent))]/25" : "hover:border-[hsl(var(--accent))]/20"}`}
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${useAccent ? "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] group-hover:bg-[hsl(var(--accent))]/20" : "bg-primary/10 text-primary group-hover:bg-primary/20"}`}>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${useAccent ? "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] group-hover:bg-[hsl(var(--accent))]/20" : "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] group-hover:bg-[hsl(var(--accent))]/20"}`}>
                 <feature.icon className="h-5 w-5" />
               </div>
               <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
@@ -122,7 +122,7 @@ export function Features() {
                   <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
                     Aspecto
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-primary">
+                  <th className="px-6 py-4 text-left text-sm font-medium text-[hsl(var(--accent))]">
                     Faro
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
@@ -139,7 +139,7 @@ export function Features() {
                     }
                   >
                     <td className="px-6 py-4 text-sm text-foreground">{row.feature}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-primary">{row.faro}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-[hsl(var(--accent))]">{row.faro}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">{row.bank}</td>
                   </tr>
                 ))}

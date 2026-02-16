@@ -7,7 +7,7 @@ const partners = [
 
 export function TrustedBy() {
   return (
-    <section className="relative py-16 border-t border-primary/10 bg-primary/[0.04]">
+    <section className="relative py-16 border-t border-[hsl(var(--accent))]/15 bg-card/30">
       <div className="mx-auto max-w-7xl px-6">
         <p className="text-center text-sm font-medium uppercase tracking-widest text-muted-foreground mb-8">
           Impulsado por
@@ -19,7 +19,7 @@ export function TrustedBy() {
               href={p.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl border border-primary/15 bg-card px-8 py-4 font-display text-lg font-bold text-foreground transition-colors hover:border-[hsl(var(--accent))]/30 hover:bg-[hsl(var(--accent))]/5"
+              className="rounded-xl border border-[hsl(var(--accent))]/20 bg-card px-8 py-4 font-display text-lg font-bold text-foreground transition-colors hover:border-[hsl(var(--accent))]/30 hover:bg-[hsl(var(--accent))]/5"
             >
               {p.label}
             </Link>

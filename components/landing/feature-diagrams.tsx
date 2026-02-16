@@ -17,7 +17,7 @@ const diagrams = [
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--accent))]/30 bg-primary/50 text-[hsl(var(--accent))]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--accent))]/40 bg-white/10 text-[hsl(var(--accent))]"
             >
               <Users className="h-5 w-5" />
             </div>
@@ -36,7 +36,7 @@ const diagrams = [
           <Lock className="h-7 w-7" />
         </div>
         <div className="h-px w-6 border-t-2 border-dashed border-[hsl(var(--accent))]/40" />
-        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--accent))]/40 bg-primary/50 text-[hsl(var(--accent))]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--accent))]/40 bg-white/10 text-[hsl(var(--accent))]">
           <DollarSign className="h-6 w-6" />
         </div>
       </div>
@@ -55,7 +55,7 @@ const diagrams = [
           {["SEP", "Escrow", "USDC"].map((label) => (
             <div
               key={label}
-              className="rounded-lg border border-[hsl(var(--accent))]/30 bg-primary/60 px-2 py-1 text-[10px] font-bold text-[hsl(var(--accent))]"
+              className="rounded-lg border border-[hsl(var(--accent))]/40 bg-white/10 px-2 py-1 text-[10px] font-bold text-[hsl(var(--accent))]"
             >
               {label}
             </div>

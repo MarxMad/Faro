@@ -38,10 +38,10 @@ const steps = [
 
 export function FlowSection() {
   return (
-    <section id="flujo" className="relative py-24 overflow-hidden bg-gradient-to-b from-background to-primary/[0.04]">
+    <section id="flujo" className="relative py-24 overflow-hidden bg-background">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
-          <span className="text-sm font-medium uppercase tracking-widest text-primary">
+          <span className="text-sm font-medium uppercase tracking-widest text-[hsl(var(--accent))]">
             Flujo
           </span>
           <h2 className="mt-4 font-display text-balance text-3xl font-bold sm:text-4xl text-foreground">
@@ -58,8 +58,8 @@ export function FlowSection() {
             const useAccent = i === 2 || i === 3
             return (
             <div key={step.label} className="flex items-center">
-              <div className={`glass-panel flex flex-col items-center gap-2 p-4 min-w-[140px] sm:min-w-[160px] transition-all hover:shadow-md group ${useAccent ? "hover:border-[hsl(var(--accent))]/30 border-[hsl(var(--accent))]/15 bg-[hsl(var(--accent))]/5" : "hover:border-primary/40"}`}>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${useAccent ? "bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] group-hover:bg-[hsl(var(--accent))]/25" : "bg-primary/10 text-primary group-hover:bg-primary/20"}`}>
+              <div className={`glass-panel flex flex-col items-center gap-2 p-4 min-w-[140px] sm:min-w-[160px] transition-all hover:shadow-md group ${useAccent ? "hover:border-[hsl(var(--accent))]/30 border-[hsl(var(--accent))]/15 bg-[hsl(var(--accent))]/5" : "hover:border-[hsl(var(--accent))]/25 border-[hsl(var(--accent))]/10 bg-card/90"}`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${useAccent ? "bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))] group-hover:bg-[hsl(var(--accent))]/25" : "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] group-hover:bg-[hsl(var(--accent))]/20"}`}>
                   <step.icon className="h-6 w-6" />
                 </div>
                 <span className="text-center text-sm font-semibold text-foreground">
@@ -85,15 +85,15 @@ export function FlowSection() {
             i < steps.length - 1 ? (
               <div
                 key={i}
-                className="h-4 w-px bg-gradient-to-b from-primary/40 to-primary/10"
+                className="h-4 w-px bg-gradient-to-b from-[hsl(var(--accent))]/40 to-[hsl(var(--accent))]/10"
               />
             ) : null
           )}
         </div>
 
         {/* Aclaración: dos momentos del dinero */}
-        <div className="mt-12 rounded-xl border border-primary/20 bg-primary/5 p-6 text-left max-w-2xl mx-auto border-l-4 border-l-[hsl(var(--accent))]">
-          <p className="text-sm font-semibold text-primary mb-2">¿De dónde sale la liquidez al proveedor?</p>
+        <div className="mt-12 rounded-xl border border-[hsl(var(--accent))]/20 bg-[hsl(var(--accent))]/5 p-6 text-left max-w-2xl mx-auto border-l-4 border-l-[hsl(var(--accent))]">
+          <p className="text-sm font-semibold text-[hsl(var(--accent))] mb-2">¿De dónde sale la liquidez al proveedor?</p>
           <p className="text-sm text-muted-foreground">
             El <strong>inversionista</strong> paga con descuento (ej. 90% del valor) y ese monto se entrega al <strong>proveedor</strong> de inmediato. El <strong>escrow</strong> no retiene ese pago: protege la segunda parte: cuando el <strong>negocio</strong> paga el 100% al vencimiento, el escrow asegura que ese pago llegue al inversionista (su ganancia es el descuento).
           </p>
