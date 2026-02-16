@@ -1,16 +1,9 @@
-import { SignIn } from "@clerk/nextjs"
+import { SignInGate } from "@/components/auth/sign-in-gate"
 
 export default function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30">
-      <SignIn
-        appearance={{
-          elements: {
-            rootBox: "mx-auto",
-            card: "shadow-lg",
-          },
-        }}
-      />
+      <SignInGate />
     </div>
   )
 }

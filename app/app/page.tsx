@@ -52,7 +52,7 @@ function getStatusClass(status: Invoice["status"]) {
 
 function getRoleBadgeClass(role: "provider" | "investor" | "deudor") {
   if (role === "provider")
-    return "bg-primary/10 text-primary border-primary/20"
+    return "bg-emerald-500/20 text-emerald-200 border-emerald-500/30"
   if (role === "deudor")
     return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
   return "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] border-[hsl(var(--accent))]/20"
@@ -282,10 +282,10 @@ export default function DashboardPage() {
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-            <div className="glass-panel p-5 transition-all hover:shadow-md border-primary/10">
+            <div className="glass-panel p-5 transition-all hover:shadow-md border-[hsl(var(--accent))]/20">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total certificado</span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))]">
                   <DollarSign className="h-4 w-4" />
                 </div>
               </div>
@@ -310,10 +310,10 @@ export default function DashboardPage() {
                 En mercado o financiadas
               </p>
             </div>
-            <div className="glass-panel p-5 transition-all hover:shadow-md border-primary/10">
+            <div className="glass-panel p-5 transition-all hover:shadow-md border-[hsl(var(--accent))]/20">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total invertido</span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))]">
                   <TrendingUp className="h-4 w-4" />
                 </div>
               </div>
@@ -324,10 +324,10 @@ export default function DashboardPage() {
                 En tus inversiones
               </p>
             </div>
-            <div className="glass-panel p-5 transition-all hover:shadow-md border-primary/10">
+            <div className="glass-panel p-5 transition-all hover:shadow-md border-[hsl(var(--accent))]/20">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Rend. promedio</span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))]">
                   <TrendingUp className="h-4 w-4" />
                 </div>
               </div>
@@ -338,10 +338,10 @@ export default function DashboardPage() {
                 Tasa en inversiones
               </p>
             </div>
-            <div className="glass-panel p-5 transition-all hover:shadow-md border-primary/10">
+            <div className="glass-panel p-5 transition-all hover:shadow-md border-[hsl(var(--accent))]/20">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Por cobrar</span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))]">
                   <Clock className="h-4 w-4" />
                 </div>
               </div>

@@ -113,9 +113,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(invoice)
   } catch (e) {
-    console.error(e)
+    const err = e as NodeJS.ErrnoException
+    console.error("[POST /api/invoices]", err)
+    // En Vercel/serverless el sistema de archivos es de solo lectura; la escritura a data/invoices.json falla
+    if (err?.code === "EROFS" || err?.code === "EACCES") {
+      return NextResponse.json(
+        {
+          error:
+            "En Vercel el sistema de archivos es de solo lectura. Para crear facturas en producción sustituye el almacenamiento en lib/api/invoices-store.ts por una base de datos (p. ej. Vercel Postgres, Vercel KV o Supabase).",
+        },
+        { status: 503 }
+      )
+    }
     return NextResponse.json(
-      { error: "Error al crear factura" },
+      { error: err?.message || "Error al crear factura" },
       { status: 500 }
     )
   }

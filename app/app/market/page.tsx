@@ -96,8 +96,8 @@ export default function MarketplacePage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="glass-panel flex items-center gap-4 p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <TrendingUp className="h-5 w-5 text-primary" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15">
+            <TrendingUp className="h-5 w-5 text-[hsl(var(--accent))]" />
           </div>
           <div>
             <p className="text-2xl font-bold font-display">{avgRate.toFixed(1)}%</p>
@@ -105,8 +105,8 @@ export default function MarketplacePage() {
           </div>
         </div>
         <div className="glass-panel flex items-center gap-4 p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Shield className="h-5 w-5 text-primary" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15">
+            <Shield className="h-5 w-5 text-[hsl(var(--accent))]" />
           </div>
           <div>
             <p className="text-2xl font-bold font-display">{invoices.length}</p>
@@ -114,8 +114,8 @@ export default function MarketplacePage() {
           </div>
         </div>
         <div className="glass-panel flex items-center gap-4 p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Clock className="h-5 w-5 text-primary" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15">
+            <Clock className="h-5 w-5 text-[hsl(var(--accent))]" />
           </div>
           <div>
             <p className="text-2xl font-bold font-display">{avgDays} días</p>
@@ -144,7 +144,7 @@ export default function MarketplacePage() {
           {/* Empresas y sus últimas facturas */}
           <section>
             <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-              <Building2 className="h-5 w-5 text-primary" />
+              <Building2 className="h-5 w-5 text-[hsl(var(--accent))]" />
               Empresas y últimas facturas
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -154,8 +154,8 @@ export default function MarketplacePage() {
                   className="glass-panel flex flex-col gap-3 p-5 transition-all hover:border-primary/20"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                      <Building2 className="h-4 w-4 text-primary" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--accent))]/15">
+                      <Building2 className="h-4 w-4 text-[hsl(var(--accent))]" />
                     </div>
                     <p className="font-display font-semibold text-foreground">{companyName}</p>
                   </div>
@@ -167,12 +167,12 @@ export default function MarketplacePage() {
                       <li key={inv.id} className="flex items-center justify-between gap-2 text-sm">
                         <Link
                           href={`/app/market/${inv.id}`}
-                          className="flex items-center gap-2 text-foreground hover:text-primary hover:underline min-w-0"
+                          className="flex items-center gap-2 text-foreground hover:text-[hsl(var(--accent))] hover:underline min-w-0"
                         >
-                          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" />
                           <span className="truncate">{inv.id}</span>
-                          <span className="text-muted-foreground shrink-0">
-                            ${inv.amount.toLocaleString("es-MX")} · {inv.discountRatePercent}%
+                          <span className="shrink-0 text-muted-foreground">
+                            ${inv.amount.toLocaleString("es-MX")} · <span className="text-emerald-400 font-medium">{inv.discountRatePercent}%</span>
                           </span>
                         </Link>
                         <Button size="sm" variant="ghost" className="shrink-0 h-7 px-2" asChild>
@@ -196,7 +196,7 @@ export default function MarketplacePage() {
           {/* Lista general de facturas */}
           <section>
             <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-              <FileText className="h-5 w-5 text-primary" />
+              <FileText className="h-5 w-5 text-[hsl(var(--accent))]" />
               Todas las facturas
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -227,13 +227,13 @@ export default function MarketplacePage() {
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Monto</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold font-display text-primary">
+                      <p className="text-lg font-bold font-display text-emerald-400">
                         {inv.discountRatePercent}%
                       </p>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Tasa</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold font-display text-primary">
+                      <p className="text-lg font-bold font-display text-foreground">
                         {daysUntil(inv.dueDate)}d
                       </p>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Plazo</p>
@@ -244,7 +244,7 @@ export default function MarketplacePage() {
                     <span className="text-xs text-muted-foreground">
                       Vence: {new Date(inv.dueDate).toLocaleDateString("es-MX")}
                     </span>
-                    <Button size="sm" asChild className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button size="sm" asChild className="gap-1.5 bg-[hsl(var(--accent))] text-accent-foreground hover:opacity-90">
                       <Link href={`/app/market/${inv.id}`}>
                         Invertir
                         <ArrowRight className="h-3 w-3" />
